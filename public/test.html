@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тест IT-MANIA</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
+    .success { color: green; }
+    .error { color: red; }
+    .logo-test img { max-width: 200px; height: auto; display: block; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <h1>Тест IT-MANIA</h1>
+  
+  <div class="test-section">
+    <h2>1. Тест логотипа</h2>
+    <div class="logo-test">
+      <p>Логотип star.gif?v=2:</p>
+      <img src="images/star.gif?v=2" alt="Логотип GIF" id="logoGif">
+      <p>Статус: <span id="logoStatus">Загрузка...</span></p>
+    </div>
+  </div>
+  
+  <div class="test-section">
+    <h2>2. Тест API</h2>
+    <button onclick="testApi()">Тестировать API</button>
+    <div id="apiResult"></div>
+  </div>
+  
+  <div class="test-section">
+    <h2>3. Тест адаптивности</h2>
+    <p>Ширина экрана: <span id="screenWidth"></span>px</p>
+    <p>Высота экрана: <span id="screenHeight"></span>px</p>
+    <div style="background: #9900FF; color: white; padding: 20px; border-radius: 10px; margin: 10px 0;">
+      Тестовый блок для проверки адаптивности
+    </div>
+  </div>
+  
+  <div class="test-section">
+    <h2>4. Навигация</h2>
+    <ul>
+      <li><a href="app/login.html">Страница входа</a></li>
+      <li><a href="app/teacher/check.html">Страница проверки заданий (учитель)</a></li>
+      <li><a href="app/student/dashboard.html">Дашборд ученика</a></li>
+      <li><a href="index.html">Главная страница</a></li>
+    </ul>
+  </div>
+  
+  <script>
+    // Тест логотипа
+    const logoImg = document.getElementById('logoGif');
+    logoImg.onload = () => {
+      document.getElementById('logoStatus').textContent = '✅ Загружен успешно';
+      document.getElementById('logoStatus').className = 'success';
+    };
+    logoImg.onerror = () => {
+      document.getElementById('logoStatus').textContent = '❌ Ошибка загрузки';
+      document.getElementById('logoStatus').className = 'error';
+    };
+    
+    // Тест API
+    async function testApi() {
+      const resultDiv = document.getElementById('apiResult');
+      resultDiv.innerHTML = 'Тестирование...';
+      
+      try {
+        const response = await fetch('/api/test');
+        if (response.ok) {
+          const data = await response.json();
+          resultDiv.innerHTML = `
+            <div class="success">
+              ✅ API работает!<br>
+              Статус: ${data.status}<br>
+              Сообщение: ${data.message}<br>
+              Время: ${new Date(data.timestamp).toLocaleString()}
+            </div>
+          `;
+        } else {
+          resultDiv.innerHTML = `<div class="error">❌ Ошибка API: ${response.status} ${response.statusText}</div>`;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="error">❌ Ошибка сети: ${error.message}</div>`;
+      }
+    }
+    
+    // Тест адаптивности
+    function updateScreenSize() {
+      document.getElementById('screenWidth').textContent = window.innerWidth;
+      document.getElementById('screenHeight').textContent = window.innerHeight;
+    }
+    
+    window.addEventListener('load', updateScreenSize);
+    window.addEventListener('resize', updateScreenSize);
+    
+    // Автотест при загрузке
+    setTimeout(() => {
+      testApi();
+      updateScreenSize();
+    }, 1000);
+  </script>
+</body>
+</html>
+

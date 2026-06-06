@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Заявки — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'"><span>IT-MANIA</span></div>
+  <a href="dashboard.html"><span class="icon">📊</span> Дашборд</a>
+  <a href="users.html"><span class="icon">👥</span> Пользователи</a>
+  <a href="groups.html"><span class="icon">🏫</span> Группы</a>
+  <a href="applications.html" class="active"><span class="icon">📋</span> Заявки</a>
+  <a href="courses.html"><span class="icon">📚</span> Курсы</a>
+  <a href="payments.html"><span class="icon">💳</span> Оплаты</a>
+  <a href="reviews.html"><span class="icon">⭐</span> Отзывы</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Тикеты</a>
+  <div class="sidebar-bottom">
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
+    <h1>📋 Заявки с сайта</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <div class="user-avatar">A</div>
+    </div>
+  </div>
+
+  <!-- Фильтры -->
+  <div class="content-card" style="padding:16px 24px;">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <span style="font-weight:700;">Фильтр:</span>
+      <button onclick="filterApps('all')" class="filter-btn active" data-f="all">Все</button>
+      <button onclick="filterApps('new')" class="filter-btn" data-f="new">🔵 Новые</button>
+      <button onclick="filterApps('contacted')" class="filter-btn" data-f="contacted">🟡 Связались</button>
+      <button onclick="filterApps('enrolled')" class="filter-btn" data-f="enrolled">🟢 Записаны</button>
+      <button onclick="filterApps('rejected')" class="filter-btn" data-f="rejected">🔴 Отказ</button>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div id="appsList"><p style="color:#888;text-align:center;padding:30px;">Загрузка...</p></div>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+<style>
+  .filter-btn {
+    background: var(--bg); border: 2px solid transparent; border-radius: 20px;
+    padding: 6px 16px; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: 0.3s;
+  }
+  .filter-btn.active { background: var(--accent); color: white; }
+  .filter-btn:hover { border-color: var(--accent); }
+</style>
+
+<script src="../../js/app.js"></script>
+<script>
+  requireAuth(['admin']);
+  let allApps = [];
+
+  const statusLabel = { new: '🔵 Новая', contacted: '🟡 Связались', enrolled: '🟢 Записан', rejected: '🔴 Отказ' };
+  const statusBadge = { new: 'badge-new', contacted: 'badge-warn', enrolled: 'badge-success', rejected: 'badge-danger' };
+
+  async function init() {
+    allApps = await api('/api/admin/applications') || [];
+    renderApps(allApps);
+  }
+
+  function renderApps(apps) {
+    if (!apps.length) {
+      document.getElementById('appsList').innerHTML = '<p style="color:#888;text-align:center;padding:30px;">Заявок нет</p>';
+      return;
+    }
+    document.getElementById('appsList').innerHTML = `
+      <table class="app-table">
+        <thead><tr><th>Дата</th><th>Родитель</th><th>Ребёнок</th><th>Телефон</th><th>Статус</th><th>Изменить</th></tr></thead>
+        <tbody>
+          ${apps.map(a => `
+            <tr>
+              <td style="color:#888;font-size:0.85rem;">${new Date(a.createdAt).toLocaleDateString('ru')}</td>
+              <td style="font-weight:600;">${a.parentName}</td>
+              <td>${a.childName}</td>
+              <td><a href="tel:${a.phone}" style="color:var(--accent);text-decoration:none;">${a.phone}</a></td>
+              <td><span class="badge ${statusBadge[a.status]}">${statusLabel[a.status]}</span></td>
+              <td>
+                <select onchange="changeStatus('${a._id}',this.value)"
+                  style="border:2px solid #eee;border-radius:20px;padding:5px 12px;font-family:inherit;outline:none;cursor:pointer;font-size:0.85rem;">
+                  <option value="new" ${a.status==='new'?'selected':''}>Новая</option>
+                  <option value="contacted" ${a.status==='contacted'?'selected':''}>Связались</option>
+                  <option value="enrolled" ${a.status==='enrolled'?'selected':''}>Записан</option>
+                  <option value="rejected" ${a.status==='rejected'?'selected':''}>Отказ</option>
+                </select>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function filterApps(status) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.f === status));
+    renderApps(status === 'all' ? allApps : allApps.filter(a => a.status === status));
+  }
+
+  async function changeStatus(id, status) {
+    await api(`/api/admin/applications/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+    const app = allApps.find(a => a._id === id);
+    if (app) app.status = status;
+    showToast('Статус обновлён ✅');
+    playSound('ding');
+  }
+
+  init();
+</script>
+</body>
+</html>
+
+

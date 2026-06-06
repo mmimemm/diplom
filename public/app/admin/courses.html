@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Курсы — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'"><span>IT-MANIA</span></div>
+  <a href="dashboard.html"><span class="icon">📊</span> Дашборд</a>
+  <a href="users.html"><span class="icon">👥</span> Пользователи</a>
+  <a href="groups.html"><span class="icon">🏫</span> Группы</a>
+  <a href="applications.html"><span class="icon">📋</span> Заявки</a>
+  <a href="courses.html" class="active"><span class="icon">📚</span> Курсы</a>
+  <a href="payments.html"><span class="icon">💳</span> Оплаты</a>
+  <a href="reviews.html"><span class="icon">⭐</span> Отзывы</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Тикеты</a>
+  <div class="sidebar-bottom">
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
+    <h1>📚 Курсы и модули</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <div class="user-avatar">A</div>
+    </div>
+  </div>
+
+  <!-- Создать курс -->
+  <div class="content-card">
+    <h2>➕ Новый курс</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:12px;align-items:end;">
+      <input id="cTitle" type="text" placeholder="Название курса *"
+        style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+      <input id="cDesc" type="text" placeholder="Описание"
+        style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+      <input id="cIcon" type="text" placeholder="Иконка" value="💻"
+        style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;text-align:center;font-size:1.3rem;">
+    </div>
+    <button onclick="createCourse()" class="btn-accent" style="margin-top:12px;border-radius:20px;padding:10px 28px;">
+      Создать курс
+    </button>
+  </div>
+
+  <!-- Список курсов -->
+  <div id="coursesList"></div>
+
+  <!-- Создать модуль (появляется при выборе курса) -->
+  <div id="moduleForm" style="display:none;" class="content-card">
+    <h2>➕ Добавить модуль в курс: <span id="selectedCourseName"></span></h2>
+    <div style="display:flex;gap:12px;">
+      <input id="mTitle" type="text" placeholder="Название модуля *"
+        style="flex:1;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+      <input id="mOrder" type="number" placeholder="Порядок" value="1"
+        style="width:100px;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+      <button onclick="createModule()"
+        style="background:var(--accent);color:white;border:none;border-radius:20px;padding:10px 24px;font-weight:700;cursor:pointer;font-family:inherit;">
+        Добавить
+      </button>
+    </div>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+  requireAuth(['admin']);
+  let selectedCourseId = null;
+
+  async function loadCourses() {
+    const courses = await api('/api/courses') || [];
+    const container = document.getElementById('coursesList');
+
+    if (!courses.length) {
+      container.innerHTML = '<div class="content-card"><p style="color:#888;text-align:center;padding:30px;">Курсов пока нет</p></div>';
+      return;
+    }
+
+    let html = '';
+    for (const c of courses) {
+      const modules = await api(`/api/courses/${c._id}/modules`) || [];
+      html += `
+        <div class="content-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="font-size:2rem;">${c.icon || '📚'}</span>
+              <div>
+                <h2 style="margin:0;">${c.title}</h2>
+                <p style="color:#888;font-size:0.85rem;">${c.description || ''}</p>
+              </div>
+            </div>
+            <button onclick="selectCourse('${c._id}','${c.title.replace(/'/g,"\\'")}')"
+              style="background:var(--bg);border:2px solid var(--accent);color:var(--accent);border-radius:20px;padding:6px 16px;font-weight:700;cursor:pointer;font-family:inherit;">
+              + Модуль
+            </button>
+          </div>
+          ${modules.length ? `
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              ${modules.map(m => `
+                <div style="background:var(--bg);border-radius:12px;padding:8px 16px;font-size:0.9rem;font-weight:600;">
+                  ${m.order || ''}. ${m.title}
+                  <span style="color:#888;margin-left:6px;font-size:0.8rem;">${m.lessons?.length || 0} уроков</span>
+                </div>
+              `).join('')}
+            </div>
+          ` : '<p style="color:#888;font-size:0.85rem;">Модулей пока нет</p>'}
+        </div>`;
+    }
+    container.innerHTML = html;
+  }
+
+  function selectCourse(id, name) {
+    selectedCourseId = id;
+    document.getElementById('selectedCourseName').textContent = name;
+    document.getElementById('moduleForm').style.display = 'block';
+    document.getElementById('moduleForm').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  async function createCourse() {
+    const title = document.getElementById('cTitle').value.trim();
+    if (!title) { showToast('Введите название курса', 'error'); return; }
+    const res = await api('/api/courses', {
+      method: 'POST',
+      body: JSON.stringify({ title, description: document.getElementById('cDesc').value, icon: document.getElementById('cIcon').value })
+    });
+    if (res) { showToast('Курс создан! 📚'); playSound('success'); spawnStars(8); document.getElementById('cTitle').value = ''; loadCourses(); }
+  }
+
+  async function createModule() {
+    const title = document.getElementById('mTitle').value.trim();
+    if (!title || !selectedCourseId) { showToast('Введите название модуля', 'error'); return; }
+    const res = await api('/api/modules', {
+      method: 'POST',
+      body: JSON.stringify({ title, courseId: selectedCourseId, order: parseInt(document.getElementById('mOrder').value) || 1 })
+    });
+    if (res) { showToast('Модуль добавлен! ✅'); playSound('ding'); document.getElementById('mTitle').value = ''; loadCourses(); }
+  }
+
+  loadCourses();
+</script>
+</body>
+</html>
+
+

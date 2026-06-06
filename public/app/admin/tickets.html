@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тикеты — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'"><span>IT-MANIA</span></div>
+  <a href="dashboard.html"><span class="icon">📊</span> Дашборд</a>
+  <a href="users.html"><span class="icon">👥</span> Пользователи</a>
+  <a href="groups.html"><span class="icon">🏫</span> Группы</a>
+  <a href="applications.html"><span class="icon">📋</span> Заявки</a>
+  <a href="courses.html"><span class="icon">📚</span> Курсы</a>
+  <a href="payments.html"><span class="icon">💳</span> Оплаты</a>
+  <a href="reviews.html"><span class="icon">⭐</span> Отзывы</a>
+  <a href="tickets.html" class="active"><span class="icon">🎫</span> Тикеты</a>
+  <div class="sidebar-bottom">
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
+    <h1>🎫 Обращения (тикеты)</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <div class="user-avatar">A</div>
+    </div>
+  </div>
+
+  <div id="ticketsList"><p style="color:#888;text-align:center;padding:30px;">Загрузка...</p></div>
+
+  <!-- Детали тикета -->
+  <div id="ticketDetail" style="display:none;" class="content-card">
+    <button onclick="closeTicket()" style="background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer;margin-bottom:16px;font-family:inherit;">← Назад</button>
+    <h2 id="ticketSubject"></h2>
+    <p id="ticketMeta" style="color:#888;font-size:0.85rem;margin-bottom:16px;"></p>
+    <div id="ticketMessages" style="max-height:400px;overflow-y:auto;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:8px;">
+      <input id="replyText" type="text" placeholder="Ответить..."
+        style="flex:1;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+      <button onclick="sendReply()"
+        style="background:var(--accent);color:white;border:none;border-radius:20px;padding:10px 24px;font-weight:700;cursor:pointer;font-family:inherit;">
+        Отправить
+      </button>
+    </div>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+  requireAuth(['admin']);
+  let currentTicketId = null;
+
+  const statusLabel = { open: '🔴 Открыт', in_progress: '🟡 В работе', closed: '🟢 Закрыт' };
+
+  async function init() {
+    const tickets = await api('/api/tickets') || [];
+    const list = document.getElementById('ticketsList');
+
+    if (!tickets.length) {
+      list.innerHTML = '<div class="content-card"><p style="color:#888;text-align:center;padding:30px;">Обращений пока нет</p></div>';
+      return;
+    }
+
+    list.innerHTML = `<div class="content-card">
+      <table class="app-table">
+        <thead><tr><th>Дата</th><th>Пользователь</th><th>Тема</th><th>Статус</th><th></th></tr></thead>
+        <tbody>
+          ${tickets.map(t => `
+            <tr>
+              <td style="color:#888;font-size:0.85rem;">${new Date(t.createdAt).toLocaleDateString('ru')}</td>
+              <td style="font-weight:600;">${t.userId?.firstName || ''} ${t.userId?.lastName || ''}<br>
+                <span style="color:#888;font-size:0.8rem;">${t.userId?.role || ''}</span></td>
+              <td>${t.subject || 'Без темы'}</td>
+              <td><span class="badge ${t.status==='open'?'badge-danger':t.status==='in_progress'?'badge-warn':'badge-success'}">${statusLabel[t.status]}</span></td>
+              <td>
+                <button onclick="openTicket('${t._id}','${(t.subject||'').replace(/'/g,"\\'")}','${t.userId?.firstName||''} ${t.userId?.lastName||''}')"
+                  style="background:var(--accent);color:white;border:none;border-radius:20px;padding:5px 14px;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.85rem;">
+                  Открыть
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }
+
+  async function openTicket(id, subject, userName) {
+    currentTicketId = id;
+    document.getElementById('ticketsList').style.display = 'none';
+    document.getElementById('ticketDetail').style.display = 'block';
+    document.getElementById('ticketSubject').textContent = subject || 'Без темы';
+    document.getElementById('ticketMeta').textContent = `От: ${userName}`;
+
+    const tickets = await api('/api/tickets') || [];
+    const ticket = tickets.find(t => t._id === id);
+    if (!ticket) return;
+
+    const msgs = [
+      { text: ticket.message, isUser: true, date: ticket.createdAt },
+      ...(ticket.replies || []).map(r => ({ text: r.text, isUser: false, date: r.createdAt }))
+    ];
+
+    document.getElementById('ticketMessages').innerHTML = msgs.map(m => `
+      <div style="display:flex;justify-content:${m.isUser?'flex-start':'flex-end'};margin-bottom:10px;">
+        <div style="background:${m.isUser?'var(--bg)':'var(--accent)'};color:${m.isUser?'#1a1a2e':'white'};
+          border-radius:16px;padding:10px 16px;max-width:70%;font-size:0.9rem;">
+          ${m.text}
+          <div style="font-size:0.75rem;opacity:0.6;margin-top:4px;">${new Date(m.date).toLocaleString('ru')}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function closeTicket() {
+    currentTicketId = null;
+    document.getElementById('ticketsList').style.display = 'block';
+    document.getElementById('ticketDetail').style.display = 'none';
+  }
+
+  async function sendReply() {
+    const text = document.getElementById('replyText').value.trim();
+    if (!text || !currentTicketId) return;
+    await api(`/api/tickets/${currentTicketId}/reply`, { method: 'POST', body: JSON.stringify({ text }) });
+    document.getElementById('replyText').value = '';
+    playSound('ding');
+    openTicket(currentTicketId, document.getElementById('ticketSubject').textContent, '');
+  }
+
+  init();
+</script>
+</body>
+</html>
+
+

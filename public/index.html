@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IT-MANIA — IT-курсы для детей</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/landing.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#9900FF">
+</head>
+<body>
+
+<!-- ===== НАВБАР ===== -->
+<nav id="navbar">
+  <div class="nav-brand" onclick="scrollToTop()" role="button" tabindex="0" aria-label="IT-MANIA">
+    <img src="images/star.gif?v=3" class="nav-logo" alt="IT-MANIA" id="navLogo" onerror="this.onerror=null; this.src='images/it.png'">
+    <span class="nav-brand-text">IT-MANIA</span>
+  </div>
+  <div class="nav-links" id="navLinks">
+    <a href="#skills" onclick="smoothScroll('#skills')">Программа</a>
+    <a href="#about" onclick="smoothScroll('#about')">О нас</a>
+    <a href="#pricing" onclick="smoothScroll('#pricing')">Стоимость</a>
+    <a href="#footer" onclick="smoothScroll('#footer')">Контакты</a>
+  </div>
+  <div class="nav-right">
+    <button class="btn-accent" onclick="openModal('applyModal')">Оставить заявку</button>
+    <a href="app/login.html" class="btn-white" style="padding:10px 20px;font-size:0.9rem;">Войти</a>
+  </div>
+  <!-- Бургер -->
+  <div class="nav-burger" id="navBurger" onclick="toggleNav()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- ===== ГЕРОЙ ===== -->
+<section id="hero">
+  <div class="hero-content">
+    <img src="images/it.png" class="hero-logo" alt="IT-MANIA" id="heroLogo" onerror="console.error('Hero logo failed to load')">
+    <div class="hero-buttons">
+      <a href="app/login.html" class="btn-accent btn-hero-main">🚀 Перейти в личный кабинет</a>
+      <button class="btn-scroll-down" onclick="smoothScroll('#skills')">
+        Ещё не знакомы с нами? ↓
+      </button>
+    </div>
+  </div>
+<!-- Персонажи — внутри hero, не выходят за блок -->
+  <img src="images/dino.png" id="dino" alt="Динозавр">
+  <img src="images/cat.png" id="cat-hero" alt="Кот">
+</section>
+
+<!-- ===== НАВЫКИ ===== -->
+<section id="skills">
+  <div class="skills-inner">
+    <h2 data-anim>С нами вы получите навыки</h2>
+    <div class="skills-grid">
+      <!-- Ряд 1 -->
+      <div class="skill-card" data-anim>
+        <img src="images/program.png" alt="Программирование">
+        <p>Программирования</p>
+      </div>
+      <div class="skill-card" data-anim>
+        <img src="images/game.png" alt="Игры">
+        <p>Создания игр</p>
+      </div>
+      <div class="skill-card" data-anim>
+        <img src="images/webp.png" alt="Веб-приложения">
+        <p>Создания веб-приложений</p>
+      </div>
+      <!-- Ряд 2 -->
+      <div class="skill-card" data-anim>
+        <img src="images/vr.png" alt="VR AR">
+        <p>VR и AR-технологий</p>
+      </div>
+      <div class="skill-card" data-anim>
+        <img src="images/web.png" alt="Сайты">
+        <p>Создания сайтов</p>
+      </div>
+      <div class="skill-card" data-anim>
+        <img src="images/design.png" alt="Дизайн">
+        <p>Дизайна</p>
+      </div>
+      <!-- Ряд 3 -->
+      <div class="skill-card" data-anim>
+        <img src="images/eng.png" alt="Английский">
+        <p>Английскому языку</p>
+      </div>
+      <div class="skill-card" data-anim>
+        <img src="images/photo.png" alt="Фото-видео">
+        <p>Фото-видео-монтажу</p>
+      </div>
+      <div class="skill-card" data-anim>
+        <img src="images/com.png" alt="Команда">
+        <p>Работе в команде</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ГАЛЕРЕЯ ===== -->
+<section id="gallery">
+  <img src="images/pazl.png" class="gallery-puzzle" alt="Пазл" data-anim="scale">
+  <h3 data-anim>Каждое занятие — это шаг в будущее</h3>
+
+  <!-- Карусель Bootstrap -->
+  <div id="galleryCarousel" class="carousel slide" data-bs-ride="carousel" style="max-width:1100px;margin:0 auto;" data-anim>
+    <div class="carousel-indicators">
+      <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="0" class="active"></button>
+      <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="1"></button>
+      <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="2"></button>
+      <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="3"></button>
+      <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="4"></button>
+      <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="5"></button>
+    </div>
+    <div class="carousel-inner rounded-4">
+      <div class="carousel-item active"><img src="images/k1.png" class="d-block w-100" alt="Фото 1"></div>
+      <div class="carousel-item"><img src="images/k2.png" class="d-block w-100" alt="Фото 2"></div>
+      <div class="carousel-item"><img src="images/k3.png" class="d-block w-100" alt="Фото 3"></div>
+      <div class="carousel-item"><img src="images/k4.png" class="d-block w-100" alt="Фото 4"></div>
+      <div class="carousel-item"><img src="images/k5.png" class="d-block w-100" alt="Фото 5"></div>
+      <div class="carousel-item"><img src="images/k6.png" class="d-block w-100" alt="Фото 6"></div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#galleryCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#galleryCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon"></span>
+    </button>
+  </div>
+
+  <p class="gallery-tagline" data-anim>здесь дети становятся настоящими профессионалами</p>
+</section>
+
+<!-- ===== ПРОБНЫЙ ДЕНЬ ===== -->
+<section id="trial">
+  <div class="trial-inner">
+    <div class="trial-left" data-anim="left">
+      <h2>Запишитесь на пробный день:</h2>
+      <p>Оставьте заявку и наш менеджер свяжется с вами для организации пробного занятия в школе</p>
+      <button class="btn-accent" onclick="openModal('applyModal')">
+        <span class="trial-arrow">→</span> Оставить заявку
+      </button>
+      <br>
+      <img src="images/probcat.png" alt="Кот">
+    </div>
+    <div class="trial-right" data-anim="right">
+      <div class="trial-step">
+        <div class="trial-num">1</div>
+        <p>Оставьте заявку</p>
+      </div>
+      <div class="trial-step">
+        <div class="trial-num">2</div>
+        <p>Уточните у менеджера интересующие детали</p>
+      </div>
+      <div class="trial-step">
+        <div class="trial-num">3</div>
+        <p>Ваш ребёнок становится частью нашей дружной команды</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== СТОИМОСТЬ ===== -->
+<section id="pricing">
+  <div class="pricing-inner">
+    <div class="pricing-left" data-anim="left">
+      <div class="pricing-img-wrap">
+        <img src="images/price.png" alt="Стоимость">
+        <div class="pricing-overlay">
+          <h3>Полный курс:</h3>
+          <div class="price-item"><em>Будни:</em> <span>7 500₽</span></div>
+          <div class="price-item"><em>Выходные:</em> <span>8 200₽</span></div>
+          <div class="price-item"><em>Онлайн-формат:</em> <span>15 000₽</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pricing-right" data-anim="right">
+      <h3>Что входит в стоимость:</h3>
+      <ul>
+        <li>Получение информационного образования при помощи современных методик с получением сертификата государственного образца (+баллы при поступлении в ВУЗ)</li>
+        <li>Возможность участвовать в значимых мероприятиях в сфере компьютерных технологий по всему миру</li>
+        <li>Молодой коллектив действующих специалистов в сфере IT</li>
+        <li>Индивидуальный подход к каждому ребёнку</li>
+        <li>Изучение иностранных языков без затрат на репетитора</li>
+      </ul>
+      <br>
+      <a href="app/lessons-info.html" class="btn-white">Подробнее</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ОТЗЫВЫ ===== -->
+<section id="reviews">
+  <h2 data-anim>Отзывы</h2>
+  <div class="reviews-grid" id="reviewsGrid">
+    <!-- Заполняется JS -->
+  </div>
+  <div class="reviews-actions">
+    <button class="btn-accent" onclick="openModal('reviewModal')">✍️ Оставить отзыв</button>
+  </div>
+</section>
+
+<!-- ===== ПОДВАЛ ===== -->
+<section id="footer">
+  <div class="footer-inner">
+    <h3>Наш главный филиал:</h3>
+    <div class="footer-map-row">
+      <div>
+        <iframe
+          src="https://yandex.ru/map-widget/v1/?ll=37.617635%2C55.755814&z=15&l=map"
+          allowfullscreen
+          title="Карта">
+        </iframe>
+      </div>
+      <div class="footer-address">
+        <h4>IT-MANIA</h4>
+        <p>📍 г. Москва, ул. Примерная, д. 1</p>
+        <p>📞 +7 (999) 123-45-67</p>
+        <p>✉️ info@it-mania.ru</p>
+        <p>🕐 Пн-Пт: 10:00 — 20:00</p>
+        <p>🕐 Сб-Вс: 10:00 — 18:00</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 IT-MANIA. Все права защищены.</p>
+      <div class="social-links">
+        <a href="#">ВКонтакте</a>
+        <a href="#">Telegram</a>
+        <a href="#">Instagram</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== МОДАЛКА ЗАЯВКИ ===== -->
+<div class="modal-overlay" id="applyModal">
+  <div class="modal-box">
+    <img src="images/form.png" class="modal-img-top" alt="">
+    <button class="modal-close" onclick="closeModal('applyModal')">✕</button>
+    <h3>Заполните заявку:</h3>
+    <form id="applyForm" onsubmit="submitApply(event)">
+      <input class="form-input" type="text" placeholder="Ваше ФИО" id="applyParent" required>
+      <input class="form-input" type="text" placeholder="ФИО ребёнка" id="applyChild" required>
+      <input class="form-input" type="tel" placeholder="Номер телефона" id="applyPhone" required>
+      <div class="form-checkbox-row">
+        <input type="checkbox" id="applyAgree" onchange="toggleFormBtn('applyAgree','applySubmit')">
+        <label for="applyAgree">Я согласен(-а) с политикой конфиденциальности в отношении пользовательских данных</label>
+      </div>
+      <button type="submit" class="btn-form" id="applySubmit">Оставить заявку</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== МОДАЛКА ОТЗЫВА ===== -->
+<div class="modal-overlay" id="reviewModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('reviewModal')">✕</button>
+    <h3>Оставить отзыв</h3>
+    <form onsubmit="submitReview(event)">
+      <input class="form-input" type="text" placeholder="Ваше имя" id="reviewName" required>
+      <input class="form-input" type="text" placeholder="Кто вы? (родитель, ученик...)" id="reviewRole">
+      <textarea class="form-input" placeholder="Ваш отзыв" id="reviewText" rows="4" required style="border-radius:20px;resize:none;"></textarea>
+      <div class="form-checkbox-row">
+        <input type="checkbox" id="reviewAgree" onchange="toggleFormBtn('reviewAgree','reviewSubmit')">
+        <label for="reviewAgree">Согласен(-а) с публикацией отзыва</label>
+      </div>
+      <button type="submit" class="btn-form" id="reviewSubmit">Отправить</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== МОДАЛКА ПОЛНОГО ОТЗЫВА ===== -->
+<div class="modal-overlay review-full-modal" id="reviewFullModal">
+  <div class="modal-box" style="background:white;">
+    <button class="modal-close" style="color:#333;" onclick="closeModal('reviewFullModal')">✕</button>
+    <h3 id="reviewFullName" style="color:var(--accent);"></h3>
+    <p id="reviewFullRole" style="color:#888;margin-bottom:16px;font-size:0.9rem;"></p>
+    <p id="reviewFullText" style="color:#333;line-height:1.7;"></p>
+  </div>
+</div>
+
+<!-- ===== УВЕДОМЛЕНИЕ О МАГАЗИНЕ ===== -->
+<div id="shopNotif" style="display:none;position:fixed;bottom:24px;left:24px;z-index:1500;background:var(--accent);color:white;border-radius:20px;padding:16px 24px;max-width:320px;box-shadow:var(--shadow);">
+  <div id="shopNotifText"></div>
+  <button onclick="document.getElementById('shopNotif').style.display='none'" style="background:none;border:none;color:white;float:right;margin-top:8px;cursor:pointer;">✕</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/landing.js"></script>
+<script src="js/pwa.js"></script>
+</body>
+</html>

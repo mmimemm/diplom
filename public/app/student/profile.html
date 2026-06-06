@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Профиль — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <style>
+    .avatar-builder { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0; }
+    .avatar-opt {
+      width:52px; height:52px; border-radius:14px; border:3px solid transparent;
+      background:var(--bg); display:flex; align-items:center; justify-content:center;
+      font-size:1.6rem; cursor:pointer; transition:0.3s;
+    }
+    .avatar-opt.selected { border-color:var(--accent); background:rgba(153,0,255,0.1); }
+    .avatar-opt:hover { transform:scale(1.1); }
+    .avatar-preview {
+      width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,var(--accent-light),var(--accent));
+      display:flex; align-items:center; justify-content:center; font-size:3rem;
+      margin:0 auto 16px; box-shadow:0 4px 20px rgba(153,0,255,0.3);
+    }
+    .section-label { font-weight:700; font-size:0.9rem; color:#888; margin:12px 0 6px; }
+  </style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'">
+    <span>IT-MANIA</span>
+  </div>
+  <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
+  <a href="lessons.html"><span class="icon">📚</span> Мои уроки</a>
+  <a href="progress-map.html"><span class="icon">🗺️</span> Карта прогресса</a>
+  <a href="sandbox.html"><span class="icon">🧪</span> Песочница</a>
+  <a href="shop.html"><span class="icon">🎪</span> Магазин</a>
+  <a href="leaderboard.html"><span class="icon">🏆</span> Рейтинг</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Мои тикеты</a>
+  <div class="sidebar-bottom">
+    <a href="profile.html" class="active"><span class="icon">👤</span> Профиль</a>
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
+    <h1>👤 Мой профиль</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <button class="notif-btn">🔔 <span class="notif-badge" id="notifBadge"></span></button>
+      <div class="user-avatar" id="userAvatar">?</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <!-- Аватар-конструктор -->
+    <div class="content-card">
+      <h2>🎨 Мой аватар</h2>
+      <div class="avatar-preview" id="avatarPreview">😺</div>
+
+      <div class="section-label">Прическа</div>
+      <div class="avatar-builder" id="hairOpts">
+        <div class="avatar-opt selected" data-type="hair" data-val="default" onclick="selectOpt(this)">👦</div>
+        <div class="avatar-opt" data-type="hair" data-val="long" onclick="selectOpt(this)">👧</div>
+        <div class="avatar-opt" data-type="hair" data-val="curly" onclick="selectOpt(this)">🧑‍🦱</div>
+        <div class="avatar-opt" data-type="hair" data-val="bald" onclick="selectOpt(this)">🧑‍🦲</div>
+      </div>
+
+      <div class="section-label">Очки</div>
+      <div class="avatar-builder">
+        <div class="avatar-opt selected" data-type="glasses" data-val="none" onclick="selectOpt(this)">😊</div>
+        <div class="avatar-opt" data-type="glasses" data-val="round" onclick="selectOpt(this)">🤓</div>
+        <div class="avatar-opt" data-type="glasses" data-val="cool" onclick="selectOpt(this)">😎</div>
+      </div>
+
+      <div class="section-label">Одежда</div>
+      <div class="avatar-builder">
+        <div class="avatar-opt selected" data-type="shirt" data-val="default" onclick="selectOpt(this)">👕</div>
+        <div class="avatar-opt" data-type="shirt" data-val="hoodie" onclick="selectOpt(this)">🧥</div>
+        <div class="avatar-opt" data-type="shirt" data-val="suit" onclick="selectOpt(this)">👔</div>
+      </div>
+
+      <button onclick="saveAvatar()" class="btn-accent" style="width:100%;margin-top:16px;border-radius:20px;padding:12px;">
+        💾 Сохранить аватар
+      </button>
+    </div>
+
+    <!-- Данные профиля -->
+    <div>
+      <div class="content-card">
+        <h2>📋 Мои данные</h2>
+        <div id="profileInfo" style="margin-bottom:16px;"></div>
+        <div class="section-label">Email</div>
+        <input id="pEmail" type="email" placeholder="your@email.com"
+          style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:10px;">
+        <div class="section-label">Телефон</div>
+        <input id="pPhone" type="tel" placeholder="+7 (999) 000-00-00"
+          style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:16px;">
+        <button onclick="saveProfile()" class="btn-accent" style="width:100%;border-radius:20px;padding:12px;">
+          Сохранить
+        </button>
+      </div>
+
+      <!-- Настройки -->
+      <div class="content-card">
+        <h2>⚙️ Настройки</h2>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--bg);">
+          <span style="font-weight:600;">🔊 Звуки</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="soundToggle" onchange="toggleSound()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
+          <span style="font-weight:600;">🌙 Тёмная тема</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+  requireAuth(['student']);
+
+  const avatarEmojis = {
+    hair: { default:'👦', long:'👧', curly:'🧑‍🦱', bald:'🧑‍🦲' },
+    glasses: { none:'😊', round:'🤓', cool:'😎' },
+    shirt: { default:'👕', hoodie:'🧥', suit:'👔' }
+  };
+
+  let currentConfig = { hair:'default', glasses:'none', shirt:'default' };
+
+  function updatePreview() {
+    const emoji = avatarEmojis.glasses[currentConfig.glasses] || '😊';
+    document.getElementById('avatarPreview').textContent = emoji;
+  }
+
+  function selectOpt(el) {
+    const type = el.dataset.type;
+    const val = el.dataset.val;
+    document.querySelectorAll(`[data-type="${type}"]`).forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    currentConfig[type] = val;
+    updatePreview();
+    playSound('ding');
+  }
+
+  async function init() {
+    const user = await api('/api/auth/me');
+    if (!user) return;
+    document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+    document.getElementById('pEmail').value = user.email || '';
+    document.getElementById('pPhone').value = user.phone || '';
+
+    document.getElementById('profileInfo').innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div><span style="color:#888;font-size:0.85rem;">Логин:</span> <b>${user.login}</b></div>
+        <div><span style="color:#888;font-size:0.85rem;">Имя:</span> <b>${user.firstName} ${user.lastName || ''}</b></div>
+        <div><span style="color:#888;font-size:0.85rem;">Уровень:</span> <b>${user.level || 1}</b></div>
+        <div><span style="color:#888;font-size:0.85rem;">XP:</span> <b style="color:var(--accent);">${user.xp || 0}</b></div>
+        <div><span style="color:#888;font-size:0.85rem;">Билетики:</span> <b style="color:var(--accent);">🎫 ${user.tickets || 0}</b></div>
+      </div>`;
+
+    // Восстанавливаем аватар
+    if (user.avatarConfig) {
+      currentConfig = { ...currentConfig, ...user.avatarConfig };
+      Object.keys(currentConfig).forEach(type => {
+        const val = currentConfig[type];
+        const opt = document.querySelector(`[data-type="${type}"][data-val="${val}"]`);
+        if (opt) {
+          document.querySelectorAll(`[data-type="${type}"]`).forEach(o => o.classList.remove('selected'));
+          opt.classList.add('selected');
+        }
+      });
+      updatePreview();
+    }
+
+    // Звук
+    document.getElementById('soundToggle').checked = soundEnabled;
+    document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+  }
+
+  async function saveAvatar() {
+    const res = await api('/api/auth/me', { method: 'PATCH', body: JSON.stringify({ avatarConfig: currentConfig }) });
+    if (res) { showToast('Аватар сохранён! 🎨'); launchConfetti(); }
+  }
+
+  async function saveProfile() {
+    const res = await api('/api/auth/me', {
+      method: 'PATCH',
+      body: JSON.stringify({ email: document.getElementById('pEmail').value, phone: document.getElementById('pPhone').value })
+    });
+    if (res) { showToast('Профиль сохранён ✅'); playSound('success'); }
+  }
+
+  function toggleTheme() {
+    document.body.classList.toggle('dark-theme');
+    playSound('ding');
+  }
+
+  init();
+</script>
+</body>
+</html>
+
+

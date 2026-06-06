@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Кабинет родителя — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <style>
+    .child-card {
+      background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+      border-radius: 20px; padding: 20px 24px; color: white; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 16px; cursor: pointer; transition: 0.3s;
+    }
+    .child-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .child-avatar { width: 52px; height: 52px; border-radius: 50%; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; flex-shrink: 0; }
+    .child-info h3 { font-size: 1.05rem; font-weight: 800; margin-bottom: 2px; }
+    .child-info p { font-size: 0.82rem; opacity: 0.85; }
+    .child-stats { margin-left: auto; text-align: right; }
+    .child-stats .xp { font-size: 1.2rem; font-weight: 900; }
+    .child-stats .lvl { font-size: 0.8rem; opacity: 0.8; }
+    @media(max-width:600px) { .child-card { flex-wrap:wrap; } .child-stats { margin-left:0; text-align:left; } }
+  </style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'">
+    <span>IT-MANIA</span>
+  </div>
+  <a href="dashboard.html" class="active"><span class="icon">🏠</span> Главная</a>
+  <a href="progress.html"><span class="icon">📊</span> Успеваемость</a>
+  <a href="payments.html"><span class="icon">💳</span> Оплата</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Обращения</a>
+  <div class="sidebar-bottom">
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle">☰</button>
+    <h1 id="greetingText">Кабинет родителя</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <button class="notif-btn" onclick="toggleNotif()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
+      <div class="user-avatar" id="userAvatar">?</div>
+    </div>
+  </div>
+
+  <!-- Дети -->
+  <div class="content-card">
+    <h2>👨‍👩‍👧 Мои дети</h2>
+    <div id="childrenList"><p style="color:#888;text-align:center;padding:20px;">Загрузка...</p></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <!-- Прогресс -->
+    <div class="content-card">
+      <h2>📈 Прогресс обучения</h2>
+      <div id="progressWrap">
+        <canvas id="progressChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Оплата -->
+    <div class="content-card">
+      <h2>💳 Оплата курса</h2>
+      <p style="color:#888;font-size:0.85rem;margin-bottom:16px;">Тестовый режим — деньги не списываются</p>
+      <select id="payChild" style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:10px;">
+        <option value="">Выберите ребёнка</option>
+      </select>
+      <select id="payType" style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:14px;">
+        <option value="weekday">Будни — 7 500₽</option>
+        <option value="weekend">Выходные — 8 200₽</option>
+        <option value="online">Онлайн — 15 000₽</option>
+      </select>
+      <button onclick="submitPayment()" class="btn-accent" style="width:100%;border-radius:20px;padding:12px;">
+        💳 Оплатить
+      </button>
+      <div id="payHistory" style="margin-top:16px;"></div>
+    </div>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+<div id="notifPanel" style="position:fixed;top:80px;right:24px;width:300px;background:white;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:500;padding:20px;max-height:400px;overflow-y:auto;display:none;">
+  <div style="display:flex;justify-content:space-between;margin-bottom:12px;"><b>Уведомления</b><button onclick="toggleNotif()" style="background:none;border:none;cursor:pointer;">✕</button></div>
+  <div id="notifList"></div>
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+  requireAuth(['parent']);
+  let children = [];
+  let chartInst = null;
+
+  const levelNames = {1:'Новичок',2:'Юный хакер',3:'Кодер',5:'Магистр кода',10:'Мастер IT'};
+
+  async function init() {
+    const user = await api('/api/auth/me');
+    if (!user) return;
+    const hour = new Date().getHours();
+    const greet = hour<12?'Доброе утро':hour<18?'Добрый день':'Добрый вечер';
+    document.getElementById('greetingText').textContent = `${greet}, ${user.firstName}! 👋`;
+    document.getElementById('userAvatar').textContent = user.firstName?.charAt(0)||'?';
+
+    children = await api('/api/parent/children') || [];
+
+    if (!children.length) {
+      document.getElementById('childrenList').innerHTML = `
+        <div style="text-align:center;padding:24px;">
+          <div style="font-size:3rem;margin-bottom:10px;">👶</div>
+          <p style="font-weight:700;">Дети не привязаны к аккаунту</p>
+          <p style="color:#888;font-size:0.9rem;">Обратитесь к администратору для привязки</p>
+        </div>`;
+    } else {
+      document.getElementById('childrenList').innerHTML = children.map(c => {
+        const lvl = c.level||1;
+        return `
+          <div class="child-card" onclick="location.href='progress.html'">
+            <div class="child-avatar">${c.firstName?.charAt(0)||'?'}</div>
+            <div class="child-info">
+              <h3>${c.firstName} ${c.lastName||''}</h3>
+              <p>${c.groupId?.name||'Группа не назначена'}</p>
+            </div>
+            <div class="child-stats">
+              <div class="xp">⭐ ${c.xp||0} XP</div>
+              <div class="lvl">${levelNames[lvl]||'Уровень '+lvl} · 🎫 ${c.tickets||0}</div>
+            </div>
+          </div>`;
+      }).join('');
+
+      // Заполняем селект
+      const sel = document.getElementById('payChild');
+      children.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c._id;
+        o.textContent = `${c.firstName} ${c.lastName||''}`;
+        sel.appendChild(o);
+      });
+
+      // График первого ребёнка
+      if (children[0]) loadChart(children[0]._id);
+    }
+
+    loadPayHistory();
+    loadNotifications();
+  }
+
+  async function loadChart(childId) {
+    const progress = await api(`/api/progress/${childId}`) || [];
+    const months = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+    const counts = new Array(12).fill(0);
+    progress.forEach(p => { const m = new Date(p.checkedAt||p.submittedAt).getMonth(); if(m>=0) counts[m]++; });
+    if (chartInst) chartInst.destroy();
+    chartInst = new Chart(document.getElementById('progressChart'), {
+      type:'line',
+      data:{ labels:months, datasets:[{ label:'Задания', data:counts,
+        borderColor:'#9900FF', backgroundColor:'rgba(153,0,255,0.1)', fill:true, tension:0.4, pointBackgroundColor:'#9900FF' }] },
+      options:{ plugins:{ legend:{ display:false } },
+        scales:{ y:{ beginAtZero:true, grid:{ color:'#f0e8ff' } }, x:{ grid:{ display:false } } } }
+    });
+  }
+
+  async function loadPayHistory() {
+    const payments = await api('/api/payments') || [];
+    const typeLabel = { weekday:'Будни', weekend:'Выходные', online:'Онлайн' };
+    document.getElementById('payHistory').innerHTML = payments.length
+      ? `<div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;">История оплат:</div>` +
+        payments.slice(0,3).map(p=>`
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bg);font-size:0.85rem;">
+            <span>${typeLabel[p.type]||p.type} · ${new Date(p.createdAt).toLocaleDateString('ru')}</span>
+            <span style="font-weight:700;color:var(--accent);">${(p.amount||0).toLocaleString('ru')}₽</span>
+          </div>`).join('')
+      : '<p style="color:#888;font-size:0.85rem;margin-top:8px;">Оплат пока нет</p>';
+  }
+
+  async function submitPayment() {
+    const studentId = document.getElementById('payChild').value;
+    const type = document.getElementById('payType').value;
+    if (!studentId) { showToast('Выберите ребёнка','error'); return; }
+    const amounts = { weekday:7500, weekend:8200, online:15000 };
+    const res = await api('/api/payments', { method:'POST', body:JSON.stringify({ studentId, type, amount:amounts[type] }) });
+    if (res?._id) { showToast('Оплата прошла! ✅'); launchConfetti(); loadPayHistory(); }
+    else showToast(res?.error||'Ошибка','error');
+  }
+
+  async function toggleNotif() {
+    const p = document.getElementById('notifPanel');
+    p.style.display = p.style.display==='none' ? 'block' : 'none';
+    if (p.style.display==='block') {
+      const notes = await loadNotifications();
+      document.getElementById('notifList').innerHTML = notes?.length
+        ? notes.map(n=>`<div style="padding:8px 0;border-bottom:1px solid #f0e8ff;font-size:0.85rem;"><b>${n.text}</b><div style="color:#aaa;font-size:0.75rem;">${new Date(n.createdAt).toLocaleDateString('ru')}</div></div>`).join('')
+        : '<p style="color:#888;text-align:center;">Нет уведомлений</p>';
+      await api('/api/notifications/read',{method:'PATCH'});
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
+
+

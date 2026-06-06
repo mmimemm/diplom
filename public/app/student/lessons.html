@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Мои уроки — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <!-- Monaco Editor -->
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+  <style>
+    .module-card {
+      background: white;
+      border-radius: var(--radius-card);
+      padding: 20px 24px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .module-card:hover { transform: translateX(6px); box-shadow: var(--shadow); }
+    .module-icon { font-size: 2rem; width: 52px; text-align: center; }
+    .module-info h3 { font-weight: 700; font-size: 1rem; }
+    .module-info p { color: #888; font-size: 0.85rem; margin-top: 2px; }
+
+    .lesson-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-bottom: 8px;
+    }
+    .lesson-item:hover { background: var(--bg); }
+    .lesson-status { font-size: 1.2rem; width: 28px; text-align: center; }
+    .lesson-title { flex: 1; font-weight: 600; font-size: 0.95rem; }
+    .lesson-xp { color: var(--accent); font-size: 0.85rem; font-weight: 700; }
+
+    /* Вкладки теория/практика */
+    .tab-btns { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tab-btn {
+      padding: 10px 24px;
+      border-radius: 30px;
+      border: 2px solid var(--accent);
+      background: none;
+      color: var(--accent);
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: inherit;
+    }
+    .tab-btn.active { background: var(--accent); color: white; }
+
+    .hint-box {
+      background: rgba(153,0,255,0.08);
+      border-left: 4px solid var(--accent);
+      border-radius: 0 12px 12px 0;
+      padding: 12px 16px;
+      margin: 12px 0;
+      font-size: 0.9rem;
+    }
+
+    /* Интерактивный блок кода */
+    .interactive-block {
+      background: #1e1e1e;
+      border-radius: 16px;
+      overflow: hidden;
+      margin: 16px 0;
+    }
+    .interactive-block .ib-header {
+      background: #2d2d2d;
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .interactive-block .ib-header span { color: #888; font-size: 0.85rem; }
+    .ib-run-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .ib-run-btn:hover { background: var(--accent-dark); }
+    .ib-code { padding: 16px; color: #d4d4d4; font-family: monospace; font-size: 0.9rem; white-space: pre; overflow-x: auto; }
+    .ib-output { background: #0d0d0d; padding: 12px 16px; color: #4ec9b0; font-family: monospace; font-size: 0.85rem; display: none; }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'">
+    <span>IT-MANIA</span>
+  </div>
+  <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
+  <a href="lessons.html" class="active"><span class="icon">📚</span> Мои уроки</a>
+  <a href="progress-map.html"><span class="icon">🗺️</span> Карта прогресса</a>
+  <a href="sandbox.html"><span class="icon">🧪</span> Песочница</a>
+  <a href="shop.html"><span class="icon">🎪</span> Магазин</a>
+  <a href="leaderboard.html"><span class="icon">🏆</span> Рейтинг</a>
+  <div class="sidebar-bottom">
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a>
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
+    <h1>📚 Мои уроки</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <button class="notif-btn" onclick="openNotifications()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
+      <div class="user-avatar" id="userAvatar">?</div>
+    </div>
+  </div>
+
+  <!-- Список модулей / уроков / редактор — переключаются -->
+  <div id="viewModules">
+    <div class="content-card">
+      <h2>Мои модули</h2>
+      <div id="modulesList"><p style="color:#888;text-align:center;padding:30px;">Загрузка...</p></div>
+    </div>
+  </div>
+
+  <div id="viewLessons" style="display:none;">
+    <div class="content-card">
+      <button onclick="showModules()" style="background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer;margin-bottom:16px;">← Назад к модулям</button>
+      <h2 id="moduleName">Уроки</h2>
+      <div id="lessonsList"></div>
+    </div>
+  </div>
+
+  <div id="viewLesson" style="display:none;">
+    <div class="content-card">
+      <button onclick="showLessons()" style="background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer;margin-bottom:16px;">← Назад к урокам</button>
+      <h2 id="lessonTitle">Урок</h2>
+
+      <!-- Вкладки -->
+      <div class="tab-btns">
+        <button class="tab-btn active" onclick="switchTab('theory')">📖 Теория</button>
+        <button class="tab-btn" onclick="switchTab('practice')">💻 Практика</button>
+      </div>
+
+      <!-- Теория -->
+      <div id="tabTheory">
+        <div id="theoryContent"></div>
+      </div>
+
+      <!-- Практика -->
+      <div id="tabPractice" style="display:none;">
+        <div id="practiceDesc" style="margin-bottom:16px;"></div>
+
+        <!-- Подсказки -->
+        <div id="hintsSection" style="display:none;">
+          <div class="hint-box" id="currentHint"></div>
+        </div>
+        <button onclick="showHint()" style="background:none;border:none;color:var(--accent);font-weight:600;cursor:pointer;margin-bottom:16px;font-family:inherit;">
+          💡 Дайте идею!
+        </button>
+
+        <!-- Редактор кода -->
+        <div class="editor-wrap">
+          <div class="editor-toolbar">
+            <span id="editorLang">JavaScript</span>
+            <div style="display:flex;gap:8px;">
+              <button onclick="runCode()" style="background:var(--accent);color:white;border:none;border-radius:20px;padding:6px 16px;font-size:0.85rem;font-weight:700;cursor:pointer;">▶ Запустить</button>
+              <button onclick="submitCode()" style="background:#00aa44;color:white;border:none;border-radius:20px;padding:6px 16px;font-size:0.85rem;font-weight:700;cursor:pointer;">📤 Сдать</button>
+            </div>
+          </div>
+          <div id="monaco-editor"></div>
+        </div>
+
+        <!-- Вывод -->
+        <div id="codeOutput" style="background:#1e1e1e;border-radius:0 0 16px 16px;padding:12px 16px;color:#4ec9b0;font-family:monospace;font-size:0.85rem;display:none;"></div>
+
+        <!-- Чат по коду -->
+        <div class="content-card" style="margin-top:16px;">
+          <h2>💬 Вопрос преподавателю</h2>
+          <div id="codeComments" style="max-height:200px;overflow-y:auto;margin-bottom:12px;"></div>
+          <div style="display:flex;gap:8px;">
+            <input id="commentLine" type="number" placeholder="Строка" style="width:80px;border:2px solid #eee;border-radius:20px;padding:8px 12px;font-family:inherit;outline:none;">
+            <input id="commentText" type="text" placeholder="Ваш вопрос..." style="flex:1;border:2px solid #eee;border-radius:20px;padding:8px 16px;font-family:inherit;outline:none;">
+            <button onclick="sendComment()" style="background:var(--accent);color:white;border:none;border-radius:20px;padding:8px 20px;font-weight:700;cursor:pointer;">→</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+  requireAuth(['student']);
+
+  let monacoEditor = null;
+  let currentLesson = null;
+  let currentSubmissionId = null;
+  let hintIndex = 0;
+  let currentModuleId = null;
+
+  // Инициализируем Monaco
+  require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' } });
+  require(['vs/editor/editor.main'], () => {
+    monacoEditor = monaco.editor.create(document.getElementById('monaco-editor'), {
+      value: '// Напиши свой код здесь\n',
+      language: 'javascript',
+      theme: 'vs-dark',
+      fontSize: 14,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      automaticLayout: true,
+      lineNumbers: 'on',
+      roundedSelection: true,
+      padding: { top: 12 }
+    });
+  });
+
+  async function init() {
+    const user = await api('/api/auth/me');
+    if (!user) return;
+    document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+
+    if (!user.groupId) {
+      document.getElementById('modulesList').innerHTML = '<p style="color:#888;text-align:center;padding:30px;">Вы ещё не записаны в группу. Обратитесь к администратору.</p>';
+      return;
+    }
+    // Загружаем все курсы без админ-прав — доступно всем
+    loadModules();
+  }
+
+  async function loadModules() {
+    const courses = await api('/api/courses');
+    if (!courses?.length) {
+      document.getElementById('modulesList').innerHTML = '<p style="color:#888;text-align:center;padding:30px;">Курсы пока не добавлены</p>';
+      return;
+    }
+
+    // Показываем модули первого курса
+    const course = courses[0];
+    const modules = await api(`/api/courses/${course._id}/modules`);
+
+    document.getElementById('modulesList').innerHTML = modules?.length
+      ? modules.map(m => `
+        <div class="module-card" onclick="openModule('${m._id}', '${m.title}')">
+          <div class="module-icon">📦</div>
+          <div class="module-info">
+            <h3>${m.title}</h3>
+            <p>${m.lessons?.length || 0} уроков</p>
+          </div>
+          <span style="color:var(--accent);font-size:1.2rem;">→</span>
+        </div>
+      `).join('')
+      : '<p style="color:#888;text-align:center;padding:30px;">Модули пока не добавлены</p>';
+  }
+
+  async function openModule(moduleId, title) {
+    currentModuleId = moduleId;
+    document.getElementById('moduleName').textContent = title;
+    document.getElementById('viewModules').style.display = 'none';
+    document.getElementById('viewLessons').style.display = 'block';
+
+    const [lessons, user] = await Promise.all([
+      api(`/api/modules/${moduleId}/lessons`),
+      api('/api/auth/me')
+    ]);
+    const progress = await api(`/api/progress/${user._id}`);
+    const doneIds = new Set(progress?.map(p => p.lessonId?._id || p.lessonId) || []);
+
+    document.getElementById('lessonsList').innerHTML = lessons?.length
+      ? lessons.map(l => `
+        <div class="lesson-item" onclick="openLesson('${l._id}')">
+          <div class="lesson-status">${doneIds.has(l._id) ? '✅' : '🔓'}</div>
+          <div class="lesson-title">${l.title}</div>
+          <div class="lesson-xp">+${l.xpReward} XP</div>
+        </div>
+      `).join('')
+      : '<p style="color:#888;text-align:center;padding:20px;">Уроки пока не добавлены</p>';
+  }
+
+  async function openLesson(lessonId) {
+    // Показываем мини-игру перед уроком
+    showMiniGame(async (correct) => {
+      if (correct) showToast('Правильно! +10 XP бонус 🎉');
+      await loadLesson(lessonId);
+    });
+  }
+
+  async function loadLesson(lessonId) {
+    currentLesson = await api(`/api/lessons/${lessonId}`);
+    if (!currentLesson) return;
+
+    document.getElementById('viewLessons').style.display = 'none';
+    document.getElementById('viewLesson').style.display = 'block';
+    document.getElementById('lessonTitle').textContent = currentLesson.title;
+
+    // Теория
+    document.getElementById('theoryContent').innerHTML = currentLesson.theory?.content || '<p>Теоретическая часть в разработке</p>';
+
+    // Интерактивные блоки
+    if (currentLesson.theory?.interactiveBlocks?.length) {
+      const blocksHtml = currentLesson.theory.interactiveBlocks.map((b, i) => `
+        <div class="interactive-block">
+          <div class="ib-header">
+            <span>${b.description || 'Пример кода'}</span>
+            <button class="ib-run-btn" onclick="runInteractive(${i})">▶ Запустить</button>
+          </div>
+          <div class="ib-code" id="ibCode${i}">${b.code}</div>
+          <div class="ib-output" id="ibOut${i}"></div>
+        </div>
+      `).join('');
+      document.getElementById('theoryContent').innerHTML += blocksHtml;
+    }
+
+    // Практика
+    document.getElementById('practiceDesc').innerHTML = currentLesson.practice?.description || '';
+    hintIndex = 0;
+
+    if (monacoEditor) {
+      monacoEditor.setValue(currentLesson.practice?.starterCode || '// Напиши свой код здесь\n');
+      const lang = currentLesson.practice?.language || 'javascript';
+      monaco.editor.setModelLanguage(monacoEditor.getModel(), lang);
+      document.getElementById('editorLang').textContent = lang.charAt(0).toUpperCase() + lang.slice(1);
+    }
+
+    // Загружаем комментарии
+    loadComments();
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i === 0) === (tab === 'theory')));
+    document.getElementById('tabTheory').style.display = tab === 'theory' ? 'block' : 'none';
+    document.getElementById('tabPractice').style.display = tab === 'practice' ? 'block' : 'none';
+  }
+
+  function showModules() {
+    document.getElementById('viewLessons').style.display = 'none';
+    document.getElementById('viewModules').style.display = 'block';
+  }
+
+  function showLessons() {
+    document.getElementById('viewLesson').style.display = 'none';
+    document.getElementById('viewLessons').style.display = 'block';
+  }
+
+  function showHint() {
+    const hints = currentLesson?.practice?.hints || [];
+    if (!hints.length) { showToast('Подсказок нет, но ты справишься! 💪'); return; }
+    const hint = hints[hintIndex % hints.length];
+    document.getElementById('currentHint').textContent = '💡 ' + hint;
+    document.getElementById('hintsSection').style.display = 'block';
+    hintIndex++;
+  }
+
+  async function runInteractive(index) {
+    const code = document.getElementById(`ibCode${index}`).textContent;
+    const out = document.getElementById(`ibOut${index}`);
+    try {
+      const res = await api('/api/run-code', { method: 'POST', body: JSON.stringify({ code, language: 'javascript' }) });
+      out.textContent = '> ' + (res?.output || '(нет вывода)');
+      out.style.display = 'block';
+      playSound('ding');
+    } catch { out.textContent = 'Ошибка запуска'; out.style.display = 'block'; }
+  }
+
+  async function runCode() {
+    if (!monacoEditor) return;
+    const code = monacoEditor.getValue();
+    const lang = currentLesson?.practice?.language || 'javascript';
+    const outEl = document.getElementById('codeOutput');
+    outEl.style.display = 'block';
+    outEl.textContent = 'Запуск...';
+    try {
+      const res = await api('/api/run-code', { method: 'POST', body: JSON.stringify({ code, language: lang }) });
+      outEl.textContent = '> ' + (res?.output || '(нет вывода)');
+      outEl.style.color = res?.error ? '#f44747' : '#4ec9b0';
+      playSound(res?.error ? 'error' : 'ding');
+    } catch { outEl.textContent = 'Ошибка соединения'; }
+  }
+
+  async function submitCode() {
+    if (!monacoEditor || !currentLesson) return;
+    const code = monacoEditor.getValue();
+    const res = await api('/api/submit', {
+      method: 'POST',
+      body: JSON.stringify({ lessonId: currentLesson._id, code })
+    });
+    if (res) {
+      currentSubmissionId = res._id;
+      showToast('Задание отправлено преподавателю! ✅');
+      playSound('success');
+      spawnStars(10);
+    }
+  }
+
+  async function loadComments() {
+    if (!currentSubmissionId) return;
+    // Комментарии загружаются после первой отправки
+  }
+
+  async function sendComment() {
+    if (!currentSubmissionId) { showToast('Сначала отправьте задание', 'error'); return; }
+    const text = document.getElementById('commentText').value;
+    const line = document.getElementById('commentLine').value;
+    if (!text) return;
+    const res = await api(`/api/submissions/${currentSubmissionId}/comment`, {
+      method: 'POST',
+      body: JSON.stringify({ text, line: parseInt(line) || 0 })
+    });
+    if (res) {
+      document.getElementById('commentText').value = '';
+      document.getElementById('codeComments').innerHTML = res.map(c => `
+        <div style="padding:8px 0;border-bottom:1px solid #f0e8ff;font-size:0.85rem;">
+          <span style="font-weight:700;color:var(--accent);">${c.userId?.firstName || 'Вы'}</span>
+          ${c.line ? `<span style="color:#888;"> (строка ${c.line})</span>` : ''}
+          : ${c.text}
+        </div>
+      `).join('');
+      playSound('ding');
+    }
+  }
+
+  function openNotifications() {
+    showToast('Уведомления загружаются...', 'info');
+    loadNotifications();
+  }
+
+  init();
+</script>
+</body>
+</html>
+
+

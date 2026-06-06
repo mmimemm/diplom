@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Диагностика IT-MANIA</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+    .test { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+    .success { color: green; }
+    .error { color: red; }
+    .warning { color: orange; }
+    img { max-width: 100px; border: 1px solid #ddd; margin: 10px 0; }
+    .sidebar-logo img { width: 32px; height: 32px; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Диагностика IT-MANIA</h1>
+  
+  <div class="test">
+    <h2>1. Тест логотипа</h2>
+    <p>Путь: <code>/images/star.gif?v=2</code></p>
+    <img src="/images/star.gif?v=2" alt="Logo GIF" id="logo1" onerror="this.onerror=null; this.onerror=null; this.src='/images/star.png'; document.getElementById('logo-status').className='error'; document.getElementById('logo-status').textContent='Ошибка загрузки GIF, пробуем PNG';">
+    <p id="logo-status" class="success">✅ Логотип загружен</p>
+    <p>Файл существует: <span id="file-exists">Проверка...</span></p>
+  </div>
+  
+  <div class="test">
+    <h2>2. Тест CSS</h2>
+    <p>Проверка загрузки CSS файлов:</p>
+    <div id="css-status"></div>
+  </div>
+  
+  <div class="test">
+    <h2>3. Тест API</h2>
+    <button onclick="testAPI()">Проверить API</button>
+    <div id="api-result"></div>
+  </div>
+  
+  <div class="test">
+    <h2>4. Тест авторизации</h2>
+    <p>Текущий токен: <span id="token-status">Не проверен</span></p>
+    <button onclick="testAuth()">Проверить авторизацию</button>
+    <div id="auth-result"></div>
+  </div>
+  
+  <div class="test">
+    <h2>5. Навигация</h2>
+    <ul>
+      <li><a href="/">Главная страница</a></li>
+      <li><a href="/app/login.html">Страница входа</a></li>
+      <li><a href="/app/teacher/dashboard.html">Кабинет учителя</a></li>
+      <li><a href="/app/teacher/check.html">Проверка заданий</a></li>
+      <li><a href="/app/teacher/group.html">Моя группа</a></li>
+      <li><a href="/app/student/dashboard.html">Кабинет ученика</a></li>
+    </ul>
+  </div>
+
+  <script>
+    // Проверка существования файла
+    async function checkFile() {
+      try {
+        const response = await fetch('/images/star.gif?v=2', { method: 'HEAD' });
+        document.getElementById('file-exists').textContent = response.ok ? '✅ Да' : '❌ Нет';
+        document.getElementById('file-exists').className = response.ok ? 'success' : 'error';
+      } catch (e) {
+        document.getElementById('file-exists').textContent = '❌ Ошибка: ' + e.message;
+        document.getElementById('file-exists').className = 'error';
+      }
+    }
+    
+    // Проверка CSS
+    function checkCSS() {
+      const cssFiles = [
+        '/css/app.css',
+        '/css/landing.css'
+      ];
+      
+      const status = document.getElementById('css-status');
+      status.innerHTML = '';
+      
+      cssFiles.forEach(file => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = file;
+        
+        link.onload = () => {
+          status.innerHTML += `<p class="success">✅ ${file} загружен</p>`;
+        };
+        
+        link.onerror = () => {
+          status.innerHTML += `<p class="error">❌ ${file} ошибка</p>`;
+        };
+        
+        document.head.appendChild(link);
+      });
+    }
+    
+    // Проверка API
+    async function testAPI() {
+      const result = document.getElementById('api-result');
+      result.innerHTML = '<p>Проверка...</p>';
+      
+      try {
+        const response = await fetch('/api/test');
+        const data = await response.json();
+        
+        if (response.ok) {
+          result.innerHTML = `
+            <p class="success">✅ API работает</p>
+            <p>Статус: ${data.status}</p>
+            <p>Сообщение: ${data.message}</p>
+            <p>Время: ${new Date(data.timestamp).toLocaleString()}</p>
+          `;
+        } else {
+          result.innerHTML = `<p class="error">❌ Ошибка API: ${response.status}</p>`;
+        }
+      } catch (e) {
+        result.innerHTML = `<p class="error">❌ Ошибка сети: ${e.message}</p>`;
+      }
+    }
+    
+    // Проверка авторизации
+    function testAuth() {
+      const token = localStorage.getItem('token');
+      const role = localStorage.getItem('role');
+      const userId = localStorage.getItem('userId');
+      
+      const tokenStatus = document.getElementById('token-status');
+      const authResult = document.getElementById('auth-result');
+      
+      if (!token) {
+        tokenStatus.textContent = '❌ Нет токена';
+        tokenStatus.className = 'error';
+        authResult.innerHTML = '<p class="warning">⚠️ Вы не авторизованы. <a href="/app/login.html">Войти</a></p>';
+        return;
+      }
+      
+      tokenStatus.textContent = `✅ Токен есть (роль: ${role})`;
+      tokenStatus.className = 'success';
+      authResult.innerHTML = `
+        <p class="success">✅ Авторизованы</p>
+        <p>ID пользователя: ${userId}</p>
+        <p>Роль: ${role}</p>
+      `;
+    }
+    
+    // Запуск проверок при загрузке
+    window.addEventListener('load', () => {
+      checkFile();
+      checkCSS();
+      testAuth();
+    });
+  </script>
+</body>
+</html>
+

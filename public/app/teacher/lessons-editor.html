@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Конструктор уроков — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'"><span>IT-MANIA</span></div>
+  <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
+  <a href="check.html"><span class="icon">✅</span> Проверка заданий</a>
+  <a href="lessons-editor.html" class="active"><span class="icon">✏️</span> Конструктор уроков</a>
+  <a href="group.html"><span class="icon">👥</span> Моя группа</a>
+  <div class="sidebar-bottom">
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
+    <h1>✏️ Конструктор уроков</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <div class="user-avatar" id="userAvatar">?</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;">
+    <!-- Левая панель: выбор модуля -->
+    <div>
+      <div class="content-card">
+        <h2>Модуль</h2>
+        <select id="moduleSelect" onchange="loadLessons()"
+          style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 14px;font-family:inherit;outline:none;margin-bottom:12px;">
+          <option value="">Выберите модуль</option>
+        </select>
+        <div id="lessonsList"></div>
+        <button onclick="newLesson()" class="btn-accent" style="width:100%;margin-top:12px;border-radius:20px;padding:10px;">
+          + Новый урок
+        </button>
+      </div>
+    </div>
+
+    <!-- Правая панель: редактор урока -->
+    <div id="lessonEditor" style="display:none;">
+      <div class="content-card">
+        <h2 id="editorTitle">Новый урок</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;margin-bottom:16px;">
+          <input id="lTitle" type="text" placeholder="Название урока *"
+            style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+          <select id="lLang"
+            style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+            <option value="javascript">JavaScript</option>
+            <option value="python">Python</option>
+            <option value="html">HTML</option>
+            <option value="css">CSS</option>
+          </select>
+          <input id="lXP" type="number" value="50" placeholder="XP"
+            style="border:2px solid #eee;border-radius:20px;padding:10px 14px;font-family:inherit;outline:none;text-align:center;">
+        </div>
+
+        <!-- Вкладки -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <button class="tab-btn active" onclick="switchEditorTab('theory',this)">📖 Теория</button>
+          <button class="tab-btn" onclick="switchEditorTab('practice',this)">💻 Практика</button>
+        </div>
+
+        <!-- Теория -->
+        <div id="editorTheory">
+          <label style="font-weight:700;font-size:0.9rem;display:block;margin-bottom:6px;">Содержание урока (HTML)</label>
+          <textarea id="lTheory" rows="8" placeholder="<h3>Заголовок</h3><p>Текст урока...</p>"
+            style="width:100%;border:2px solid #eee;border-radius:16px;padding:12px 16px;font-family:monospace;outline:none;resize:vertical;font-size:0.9rem;"></textarea>
+          <label style="font-weight:700;font-size:0.9rem;display:block;margin:12px 0 6px;">Видео URL (необязательно)</label>
+          <input id="lVideo" type="text" placeholder="https://youtube.com/..."
+            style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+        </div>
+
+        <!-- Практика -->
+        <div id="editorPractice" style="display:none;">
+          <label style="font-weight:700;font-size:0.9rem;display:block;margin-bottom:6px;">Описание задания</label>
+          <textarea id="lPracticeDesc" rows="3" placeholder="Что нужно сделать..."
+            style="width:100%;border:2px solid #eee;border-radius:16px;padding:12px 16px;font-family:inherit;outline:none;resize:vertical;"></textarea>
+          <label style="font-weight:700;font-size:0.9rem;display:block;margin:12px 0 6px;">Стартовый код</label>
+          <div class="editor-wrap">
+            <div class="editor-toolbar"><span id="editorLangLabel">JavaScript</span></div>
+            <div id="starterCodeEditor" style="height:200px;"></div>
+          </div>
+          <label style="font-weight:700;font-size:0.9rem;display:block;margin:12px 0 6px;">Подсказки (каждая с новой строки)</label>
+          <textarea id="lHints" rows="3" placeholder="Используй переменную let&#10;Не забудь console.log"
+            style="width:100%;border:2px solid #eee;border-radius:16px;padding:12px 16px;font-family:inherit;outline:none;resize:vertical;"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button onclick="saveLesson()" class="btn-accent" style="border-radius:20px;padding:10px 28px;">
+            💾 Сохранить урок
+          </button>
+          <button onclick="cancelEdit()" style="background:var(--bg);border:none;border-radius:20px;padding:10px 20px;font-weight:700;cursor:pointer;font-family:inherit;">
+            Отмена
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+<style>
+  .tab-btn { padding:8px 20px;border-radius:30px;border:2px solid var(--accent);background:none;color:var(--accent);font-weight:700;cursor:pointer;font-family:inherit;transition:0.3s; }
+  .tab-btn.active { background:var(--accent);color:white; }
+  .lesson-item-btn { display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;cursor:pointer;transition:0.3s;border:none;background:none;width:100%;text-align:left;font-family:inherit;font-size:0.9rem;font-weight:600; }
+  .lesson-item-btn:hover { background:var(--bg); }
+</style>
+
+<script src="../../js/app.js"></script>
+<script>
+  requireAuth(['teacher', 'admin']);
+  let monacoEditor = null;
+  let editingLessonId = null;
+  let currentModuleId = null;
+
+  require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' } });
+  require(['vs/editor/editor.main'], () => {
+    monacoEditor = monaco.editor.create(document.getElementById('starterCodeEditor'), {
+      value: '// Стартовый код для ученика\n',
+      language: 'javascript', theme: 'vs-dark', fontSize: 13,
+      minimap: { enabled: false }, scrollBeyondLastLine: false, automaticLayout: true
+    });
+  });
+
+  async function init() {
+    const user = await api('/api/auth/me');
+    if (user) document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+
+    const courses = await api('/api/courses') || [];
+    const sel = document.getElementById('moduleSelect');
+    for (const c of courses) {
+      const modules = await api(`/api/courses/${c._id}/modules`) || [];
+      modules.forEach(m => {
+        const o = document.createElement('option');
+        o.value = m._id;
+        o.textContent = `${c.title} → ${m.title}`;
+        sel.appendChild(o);
+      });
+    }
+  }
+
+  async function loadLessons() {
+    currentModuleId = document.getElementById('moduleSelect').value;
+    if (!currentModuleId) return;
+    const lessons = await api(`/api/modules/${currentModuleId}/lessons`) || [];
+    document.getElementById('lessonsList').innerHTML = lessons.map(l => `
+      <button class="lesson-item-btn" onclick="editLesson('${l._id}')">
+        <span>📄</span> ${l.title}
+        <span style="margin-left:auto;color:var(--accent);font-size:0.8rem;">+${l.xpReward}XP</span>
+      </button>
+    `).join('') || '<p style="color:#888;font-size:0.85rem;padding:8px;">Уроков нет</p>';
+  }
+
+  function newLesson() {
+    editingLessonId = null;
+    document.getElementById('editorTitle').textContent = 'Новый урок';
+    document.getElementById('lTitle').value = '';
+    document.getElementById('lTheory').value = '';
+    document.getElementById('lVideo').value = '';
+    document.getElementById('lPracticeDesc').value = '';
+    document.getElementById('lHints').value = '';
+    document.getElementById('lXP').value = '50';
+    if (monacoEditor) monacoEditor.setValue('// Стартовый код\n');
+    document.getElementById('lessonEditor').style.display = 'block';
+  }
+
+  async function editLesson(id) {
+    const lesson = await api(`/api/lessons/${id}`);
+    if (!lesson) return;
+    editingLessonId = id;
+    document.getElementById('editorTitle').textContent = 'Редактировать: ' + lesson.title;
+    document.getElementById('lTitle').value = lesson.title || '';
+    document.getElementById('lLang').value = lesson.practice?.language || 'javascript';
+    document.getElementById('lXP').value = lesson.xpReward || 50;
+    document.getElementById('lTheory').value = lesson.theory?.content || '';
+    document.getElementById('lVideo').value = lesson.theory?.videoUrl || '';
+    document.getElementById('lPracticeDesc').value = lesson.practice?.description || '';
+    document.getElementById('lHints').value = (lesson.practice?.hints || []).join('\n');
+    if (monacoEditor) monacoEditor.setValue(lesson.practice?.starterCode || '');
+    document.getElementById('lessonEditor').style.display = 'block';
+  }
+
+  function cancelEdit() {
+    document.getElementById('lessonEditor').style.display = 'none';
+    editingLessonId = null;
+  }
+
+  function switchEditorTab(tab, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('editorTheory').style.display = tab === 'theory' ? 'block' : 'none';
+    document.getElementById('editorPractice').style.display = tab === 'practice' ? 'block' : 'none';
+  }
+
+  async function saveLesson() {
+    const title = document.getElementById('lTitle').value.trim();
+    if (!title) { showToast('Введите название урока', 'error'); return; }
+    if (!currentModuleId) { showToast('Выберите модуль', 'error'); return; }
+
+    const hints = document.getElementById('lHints').value.split('\n').filter(h => h.trim());
+    const data = {
+      moduleId: currentModuleId,
+      title,
+      xpReward: parseInt(document.getElementById('lXP').value) || 50,
+      theory: {
+        content: document.getElementById('lTheory').value,
+        videoUrl: document.getElementById('lVideo').value
+      },
+      practice: {
+        description: document.getElementById('lPracticeDesc').value,
+        language: document.getElementById('lLang').value,
+        starterCode: monacoEditor ? monacoEditor.getValue() : '',
+        hints
+      }
+    };
+
+    let res;
+    if (editingLessonId) {
+      res = await api(`/api/lessons/${editingLessonId}`, { method: 'PUT', body: JSON.stringify(data) });
+    } else {
+      res = await api('/api/lessons', { method: 'POST', body: JSON.stringify(data) });
+    }
+
+    if (res) {
+      showToast(editingLessonId ? 'Урок обновлён ✅' : 'Урок создан! 🎉');
+      playSound('success');
+      spawnStars(8);
+      cancelEdit();
+      loadLessons();
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
+
+

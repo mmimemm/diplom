@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Рейтинг — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'"><span>IT-MANIA</span></div>
+  <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
+  <a href="lessons.html"><span class="icon">📚</span> Мои уроки</a>
+  <a href="progress-map.html"><span class="icon">🗺️</span> Карта прогресса</a>
+  <a href="sandbox.html"><span class="icon">🧪</span> Песочница</a>
+  <a href="shop.html"><span class="icon">🎪</span> Магазин</a>
+  <a href="leaderboard.html" class="active"><span class="icon">🏆</span> Рейтинг</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Мои тикеты</a>
+  <div class="sidebar-bottom">
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a>
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
+    <h1>🏆 Рейтинг группы</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <button class="notif-btn">🔔 <span class="notif-badge" id="notifBadge"></span></button>
+      <div class="user-avatar" id="userAvatar">?</div>
+    </div>
+  </div>
+
+  <!-- Топ-3 подиум -->
+  <div class="content-card" style="text-align:center;">
+    <h2>🥇 Топ группы</h2>
+    <div id="podium" style="display:flex;justify-content:center;align-items:flex-end;gap:16px;padding:20px 0;"></div>
+  </div>
+
+  <!-- Полный список -->
+  <div class="content-card">
+    <h2>Все участники</h2>
+    <div id="fullList"></div>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+<style>
+  .podium-item {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .podium-avatar {
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 800; font-size: 1.2rem;
+  }
+  .podium-base {
+    border-radius: 12px 12px 0 0; display: flex; align-items: center;
+    justify-content: center; font-size: 1.5rem; font-weight: 900; color: white;
+  }
+</style>
+
+<script src="../../js/app.js"></script>
+<script>
+  requireAuth(['student']);
+
+  async function init() {
+    const user = await api('/api/auth/me');
+    if (!user) return;
+    document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+
+    const myGroup = await api('/api/admin/my-group');
+
+    if (!myGroup?.students?.length) {
+      document.getElementById('podium').innerHTML = '<p style="color:#888;">Вы ещё не в группе</p>';
+      return;
+    }
+
+    const sorted = [...myGroup.students].sort((a, b) => (b.xp || 0) - (a.xp || 0));
+    const myRank = sorted.findIndex(s => (s._id || s) === user._id) + 1;
+
+    // Подиум топ-3
+    const podiumOrder = [1, 0, 2]; // серебро, золото, бронза
+    const podiumColors = ['#C0C0C0', '#FFD700', '#CD7F32'];
+    const podiumHeights = [80, 110, 60];
+    const podiumEmojis = ['🥈', '🥇', '🥉'];
+
+    const podiumEl = document.getElementById('podium');
+    podiumOrder.forEach((idx, pos) => {
+      const s = sorted[idx];
+      if (!s) return;
+      const isMe = (s._id || s) === user._id;
+      podiumEl.innerHTML += `
+        <div class="podium-item">
+          <div class="podium-avatar" style="width:${pos===1?64:52}px;height:${pos===1?64:52}px;background:${podiumColors[pos]};${isMe?'box-shadow:0 0 0 4px var(--accent);':''}">
+            ${s.firstName?.charAt(0) || '?'}
+          </div>
+          <div style="font-weight:700;font-size:0.9rem;">${isMe ? '👤 Ты' : s.firstName || '?'}</div>
+          <div style="color:var(--accent);font-weight:800;font-size:0.85rem;">${s.xp || 0} XP</div>
+          <div class="podium-base" style="width:${pos===1?90:70}px;height:${podiumHeights[pos]}px;background:${podiumColors[pos]};">
+            ${podiumEmojis[pos]}
+          </div>
+        </div>`;
+    });
+
+    // Полный список
+    document.getElementById('fullList').innerHTML = sorted.map((s, i) => {
+      const isMe = (s._id || s) === user._id;
+      return `
+        <div class="leaderboard-item" style="${isMe ? 'background:rgba(153,0,255,0.08);border-radius:12px;padding:8px 12px;' : ''}">
+          <div class="lb-rank">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</div>
+          <div class="lb-avatar" style="${isMe ? 'background:var(--pink);' : ''}">${s.firstName?.charAt(0) || '?'}</div>
+          <div class="lb-name">${isMe ? '<b>👤 Ты</b>' : (s.firstName || '?')}</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:0.8rem;color:#888;">Ур. ${s.level || 1}</span>
+            <span class="lb-xp">${s.xp || 0} XP</span>
+            <span style="font-size:0.8rem;color:#888;">🎫 ${s.tickets || 0}</span>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Если ты в топ-3 — конфетти
+    if (myRank <= 3) {
+      setTimeout(() => launchConfetti(), 500);
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
+
+

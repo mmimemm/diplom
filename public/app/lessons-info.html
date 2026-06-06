@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Занятия — IT-MANIA</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/landing.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- Навбар такой же -->
+<nav id="navbar">
+  <img src="../images/star.gif?v=2" class="nav-logo" alt="IT-MANIA" onclick="location.href='../index.html'">
+  <div class="nav-links" id="navLinks">
+    <a href="../index.html#skills">Программа</a>
+    <a href="../index.html#about">О нас</a>
+    <a href="../index.html#pricing">Стоимость</a>
+    <a href="../index.html#footer">Контакты</a>
+  </div>
+  <div class="nav-right">
+    <button class="btn-accent" onclick="openModal('applyModal')">Оставить заявку</button>
+    <a href="login.html" class="btn-white" style="padding:10px 20px;font-size:0.9rem;">Войти</a>
+  </div>
+  <div class="nav-burger" id="navBurger" onclick="toggleNav()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<section id="lessons-page">
+  <div class="lessons-inner">
+    <div class="lessons-left" data-anim="left">
+      <h2>Количество занятий:</h2>
+      <img src="../images/kolcat.png" alt="Кот">
+    </div>
+    <div class="lessons-right" data-anim="right">
+      <div class="lesson-card">
+        <img src="../images/kol1.png" alt="">
+        <div class="lesson-card-text">
+          <h4>Комплексное программирование</h4>
+          <p>2 раза/нед</p>
+        </div>
+      </div>
+      <div class="lesson-card">
+        <img src="../images/kol2.png" alt="">
+        <div class="lesson-card-text">
+          <h4>Английский язык</h4>
+          <p>1 раз/нед</p>
+        </div>
+      </div>
+      <div class="lesson-card">
+        <img src="../images/kol3.png" alt="">
+        <div class="lesson-card-text">
+          <h4>Индивидуальные занятия</h4>
+          <p>1 раз/нед</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Модалка заявки (та же) -->
+<div class="modal-overlay" id="applyModal">
+  <div class="modal-box">
+    <img src="../images/form.png" class="modal-img-top" alt="">
+    <button class="modal-close" onclick="closeModal('applyModal')">✕</button>
+    <h3>Заполните заявку:</h3>
+    <form onsubmit="submitApply(event)">
+      <input class="form-input" type="text" placeholder="Ваше ФИО" id="applyParent" required>
+      <input class="form-input" type="text" placeholder="ФИО ребёнка" id="applyChild" required>
+      <input class="form-input" type="tel" placeholder="Номер телефона" id="applyPhone" required>
+      <div class="form-checkbox-row">
+        <input type="checkbox" id="applyAgree" onchange="toggleFormBtn('applyAgree','applySubmit')">
+        <label for="applyAgree">Я согласен(-а) с политикой конфиденциальности</label>
+      </div>
+      <button type="submit" class="btn-form" id="applySubmit">Оставить заявку</button>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  function openModal(id) { document.getElementById(id).classList.add('active'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+  function toggleNav() { document.getElementById('navLinks').classList.toggle('open'); }
+  function toggleFormBtn(c, b) { document.getElementById(b).classList.toggle('ready', document.getElementById(c).checked); }
+
+  async function submitApply(e) {
+    e.preventDefault();
+    const data = {
+      parentName: document.getElementById('applyParent').value,
+      childName: document.getElementById('applyChild').value,
+      phone: document.getElementById('applyPhone').value
+    };
+    try { await fetch('/api/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); } catch {}
+    closeModal('applyModal');
+  }
+
+  // Анимации
+  window.addEventListener('scroll', () => {
+    document.querySelectorAll('[data-anim]').forEach(el => {
+      if (el.getBoundingClientRect().top < window.innerHeight - 80) el.classList.add('visible');
+    });
+  });
+  setTimeout(() => document.querySelectorAll('[data-anim]').forEach(el => {
+    if (el.getBoundingClientRect().top < window.innerHeight - 80) el.classList.add('visible');
+  }), 100);
+</script>
+</body>
+</html>
+
+

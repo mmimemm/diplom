@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Магазин — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    .shop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+    .shop-item { background:var(--bg); border-radius:20px; padding:20px; text-align:center; transition:0.3s; }
+    .shop-item:hover { transform:translateY(-4px); box-shadow:var(--shadow); }
+  </style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'">
+    <span>IT-MANIA</span>
+  </div>
+  <a href="dashboard.html"><span class="icon">📊</span> Дашборд</a>
+  <a href="users.html"><span class="icon">👥</span> Пользователи</a>
+  <a href="groups.html"><span class="icon">🏫</span> Группы</a>
+  <a href="applications.html"><span class="icon">📋</span> Заявки</a>
+  <a href="courses.html"><span class="icon">📚</span> Курсы</a>
+  <a href="payments.html"><span class="icon">💳</span> Оплаты</a>
+  <a href="reviews.html"><span class="icon">⭐</span> Отзывы</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Тикеты</a>
+  <a href="shop-admin.html" class="active"><span class="icon">🎪</span> Магазин</a>
+  <div class="sidebar-bottom">
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
+    <h1>🎪 Управление магазином</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <div class="user-avatar">A</div>
+    </div>
+  </div>
+
+  <!-- Добавить товар -->
+  <div class="content-card">
+    <h2>➕ Добавить товар</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr 80px 120px;gap:12px;align-items:end;">
+      <input id="iName" type="text" placeholder="Название *"
+        style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+      <input id="iDesc" type="text" placeholder="Описание"
+        style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+      <input id="iIcon" type="text" placeholder="🎁" value="🎁"
+        style="border:2px solid #eee;border-radius:20px;padding:10px 14px;font-family:inherit;outline:none;text-align:center;font-size:1.3rem;">
+      <input id="iPrice" type="number" placeholder="Цена 🎫" value="50"
+        style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+    </div>
+    <div style="display:flex;gap:12px;margin-top:12px;align-items:center;">
+      <select id="iType" style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+        <option value="avatar">Элемент аватара</option>
+        <option value="editor_skin">Скин редактора</option>
+        <option value="pin_project">Закрепить проект</option>
+      </select>
+      <button onclick="addItem()" class="btn-accent" style="border-radius:20px;padding:10px 28px;">
+        Добавить товар
+      </button>
+    </div>
+  </div>
+
+  <!-- Список товаров -->
+  <div class="content-card">
+    <h2>Все товары</h2>
+    <div class="shop-grid" id="itemsList">
+      <p style="color:#888;text-align:center;padding:20px;grid-column:1/-1;">Загрузка...</p>
+    </div>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+  requireAuth(['admin']);
+
+  const typeLabel = { avatar:'Аватар', editor_skin:'Скин редактора', pin_project:'Закрепить проект' };
+
+  async function loadItems() {
+    const items = await api('/api/shop') || [];
+    const el = document.getElementById('itemsList');
+    if (!items.length) { el.innerHTML = '<p style="color:#888;text-align:center;padding:20px;grid-column:1/-1;">Товаров нет</p>'; return; }
+    el.innerHTML = items.map(item => `
+      <div class="shop-item">
+        <div style="font-size:3rem;margin-bottom:8px;">${item.icon || '🎁'}</div>
+        <h3 style="font-size:1rem;font-weight:800;margin-bottom:4px;">${item.name}</h3>
+        <p style="font-size:0.8rem;color:#888;margin-bottom:8px;">${item.description || ''}</p>
+        <div style="font-weight:800;color:var(--accent);margin-bottom:8px;">🎫 ${item.price}</div>
+        <span class="badge badge-purple">${typeLabel[item.type] || item.type}</span>
+      </div>
+    `).join('');
+  }
+
+  async function addItem() {
+    const name = document.getElementById('iName').value.trim();
+    if (!name) { showToast('Введите название', 'error'); return; }
+    const res = await api('/api/shop/items', {
+      method: 'POST',
+      body: JSON.stringify({
+        name, description: document.getElementById('iDesc').value,
+        icon: document.getElementById('iIcon').value,
+        price: parseInt(document.getElementById('iPrice').value) || 50,
+        type: document.getElementById('iType').value
+      })
+    });
+    if (res?._id) { showToast('Товар добавлен! 🎪'); playSound('success'); spawnStars(8); document.getElementById('iName').value = ''; loadItems(); }
+  }
+
+  loadItems();
+</script>
+</body>
+</html>
+
+

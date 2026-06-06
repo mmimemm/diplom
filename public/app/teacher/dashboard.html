@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Кабинет преподавателя — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css?v=2">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <style>
+    .sub-card { background:var(--bg); border-radius:16px; padding:18px 20px; margin-bottom:12px; transition:0.3s; }
+    .sub-card:hover { box-shadow:var(--shadow-card); transform:translateY(-2px); }
+    .code-view { background:#1e1e1e; border-radius:10px; padding:12px 14px; color:#d4d4d4; font-family:monospace; font-size:0.8rem; max-height:150px; overflow-y:auto; white-space:pre; margin:8px 0; }
+    .score-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .score-input { width:75px; border:2px solid var(--accent); border-radius:20px; padding:6px 10px; font-family:inherit; font-weight:700; text-align:center; outline:none; }
+    .comment-input { flex:1; min-width:120px; border:2px solid #eee; border-radius:20px; padding:8px 14px; font-family:inherit; outline:none; font-size:0.9rem; }
+    @media(max-width:768px) { .score-row { flex-direction:column; align-items:stretch; } .comment-input { min-width:unset; } }
+  </style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="../../images/star.gif?v=3" alt="IT-MANIA" onerror="this.onerror=null; this.onerror=null; this.src='../../images/star.png'">
+    <span>IT-MANIA</span>
+  </div>
+  <a href="dashboard.html" class="active"><span class="icon">🏠</span> Главная</a>
+  <a href="check.html"><span class="icon">✅</span> Проверка заданий</a>
+  <a href="lessons-editor.html"><span class="icon">✏️</span> Конструктор уроков</a>
+  <a href="group.html"><span class="icon">👥</span> Моя группа</a>
+  <div class="sidebar-bottom">
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle">☰</button>
+    <h1 id="greetingText">Кабинет преподавателя</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <button class="notif-btn" onclick="toggleNotif()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
+      <div class="user-avatar" id="userAvatar">?</div>
+    </div>
+  </div>
+
+  <!-- Метрики -->
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-info"><h3 id="pendingCount">0</h3><p>На проверке</p></div></div>
+    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-info"><h3 id="studentsCount">0</h3><p>Учеников</p></div></div>
+    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-info"><h3 id="checkedCount">0</h3><p>Проверено</p></div></div>
+    <div class="stat-card"><div class="stat-icon">📚</div><div class="stat-info"><h3 id="lessonsCount">0</h3><p>Уроков</p></div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <!-- Задания на проверке -->
+    <div class="content-card" style="grid-column:1/-1;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <h2 style="margin:0;">⏳ Задания на проверке</h2>
+        <div style="display:flex;gap:8px;">
+          <button onclick="loadSubmissions()" style="background:var(--bg);border:none;border-radius:20px;padding:7px 16px;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.85rem;">🔄 Обновить</button>
+          <a href="check.html" style="background:var(--accent);color:white;border-radius:20px;padding:7px 16px;font-weight:700;text-decoration:none;font-size:0.85rem;">Все задания →</a>
+        </div>
+      </div>
+      <div id="subsList"><p style="color:#888;text-align:center;padding:20px;">Загрузка...</p></div>
+    </div>
+  </div>
+
+  <!-- Быстрые ссылки -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:4px;">
+    <a href="lessons-editor.html" style="background:white;border-radius:16px;padding:20px;text-align:center;text-decoration:none;color:var(--text-dark);box-shadow:0 2px 8px rgba(0,0,0,0.06);transition:0.3s;display:block;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+      <div style="font-size:2rem;margin-bottom:8px;">✏️</div>
+      <div style="font-weight:700;">Создать урок</div>
+    </a>
+    <a href="group.html" style="background:white;border-radius:16px;padding:20px;text-align:center;text-decoration:none;color:var(--text-dark);box-shadow:0 2px 8px rgba(0,0,0,0.06);transition:0.3s;display:block;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+      <div style="font-size:2rem;margin-bottom:8px;">👥</div>
+      <div style="font-weight:700;">Моя группа</div>
+    </a>
+    <a href="check.html" style="background:white;border-radius:16px;padding:20px;text-align:center;text-decoration:none;color:var(--text-dark);box-shadow:0 2px 8px rgba(0,0,0,0.06);transition:0.3s;display:block;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+      <div style="font-size:2rem;margin-bottom:8px;">✅</div>
+      <div style="font-weight:700;">Проверка</div>
+    </a>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/cat.png" alt="Кот">
+</div>
+
+<div class="notif-panel" id="notifPanel" style="position:fixed;top:80px;right:24px;width:300px;background:white;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:500;padding:20px;max-height:400px;overflow-y:auto;display:none;">
+  <div style="display:flex;justify-content:space-between;margin-bottom:12px;"><b>Уведомления</b><button onclick="toggleNotif()" style="background:none;border:none;cursor:pointer;">✕</button></div>
+  <div id="notifList"></div>
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+  requireAuth(['teacher']);
+
+  async function init() {
+    const user = await api('/api/auth/me');
+    if (!user) return;
+    const hour = new Date().getHours();
+    const greet = hour < 12 ? 'Доброе утро' : hour < 18 ? 'Добрый день' : 'Добрый вечер';
+    document.getElementById('greetingText').textContent = `${greet}, ${user.firstName}! 👋`;
+    document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+
+    const [subs, groups] = await Promise.all([
+      api('/api/submissions/pending'),
+      api('/api/admin/groups')
+    ]);
+
+    document.getElementById('pendingCount').textContent = subs?.length || 0;
+
+    const myGroup = groups?.find(g => g.teacherId?._id === user._id || g.teacherId === user._id);
+    document.getElementById('studentsCount').textContent = myGroup?.students?.length || 0;
+
+    loadSubmissions(subs);
+    loadNotifications();
+  }
+
+  async function loadSubmissions(subs) {
+    if (!subs) subs = await api('/api/submissions/pending') || [];
+    document.getElementById('pendingCount').textContent = subs.length;
+
+    if (!subs.length) {
+      document.getElementById('subsList').innerHTML = `
+        <div style="text-align:center;padding:30px;">
+          <div style="font-size:3.5rem;margin-bottom:10px;">🎉</div>
+          <p style="font-weight:700;">Все задания проверены!</p>
+          <p style="color:#888;font-size:0.9rem;">Новые появятся здесь автоматически</p>
+        </div>`;
+      return;
+    }
+
+    // Показываем первые 3
+    const show = subs.slice(0, 3);
+    document.getElementById('subsList').innerHTML = show.map(s => `
+      <div class="sub-card" id="sub_${s._id}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+          <div>
+            <div style="font-weight:800;">👤 ${s.studentId?.firstName||''} ${s.studentId?.lastName||''}</div>
+            <div style="color:#888;font-size:0.82rem;">📚 ${s.lessonId?.title||'Урок'} · Попытка ${s.attempt} · ${new Date(s.submittedAt).toLocaleString('ru')}</div>
+          </div>
+          <span class="badge badge-new">Новое</span>
+        </div>
+        <div class="code-view">${escHtml(s.code||'(нет кода)')}</div>
+        <div class="score-row">
+          <input class="score-input" type="number" min="0" max="100" id="sc_${s._id}" placeholder="0-100">
+          <input class="comment-input" type="text" id="cm_${s._id}" placeholder="Комментарий...">
+          <button onclick="checkSub('${s._id}')" style="background:var(--accent);color:white;border:none;border-radius:20px;padding:8px 18px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">✅ Проверить</button>
+        </div>
+      </div>`).join('') + (subs.length > 3 ? `<a href="check.html" style="display:block;text-align:center;color:var(--accent);font-weight:700;padding:10px;text-decoration:none;">Ещё ${subs.length-3} заданий →</a>` : '');
+  }
+
+  async function checkSub(id) {
+    const score = parseInt(document.getElementById(`sc_${id}`).value);
+    const comment = document.getElementById(`cm_${id}`).value;
+    if (isNaN(score)||score<0||score>100) { showToast('Введите оценку 0–100','error'); return; }
+    const res = await api(`/api/submissions/${id}/check`, { method:'PATCH', body:JSON.stringify({score,teacherComment:comment}) });
+    if (res) {
+      const card = document.getElementById(`sub_${id}`);
+      card.style.transition='0.4s'; card.style.opacity='0'; card.style.transform='translateX(30px)';
+      setTimeout(() => { card.remove(); loadSubmissions(); }, 400);
+      showToast(`✅ Проверено! ${score}% · 🎫 ${res.tickets}`);
+      playSound('success'); spawnStars(6);
+      document.getElementById('checkedCount').textContent = (parseInt(document.getElementById('checkedCount').textContent)||0)+1;
+    }
+  }
+
+  async function toggleNotif() {
+    const p = document.getElementById('notifPanel');
+    p.style.display = p.style.display==='none' ? 'block' : 'none';
+    if (p.style.display==='block') {
+      const notes = await loadNotifications();
+      document.getElementById('notifList').innerHTML = notes?.length
+        ? notes.map(n=>`<div style="padding:8px 0;border-bottom:1px solid #f0e8ff;font-size:0.85rem;"><b>${n.text}</b><div style="color:#aaa;font-size:0.75rem;">${new Date(n.createdAt).toLocaleDateString('ru')}</div></div>`).join('')
+        : '<p style="color:#888;text-align:center;">Нет уведомлений</p>';
+      await api('/api/notifications/read',{method:'PATCH'});
+    }
+  }
+
+  function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  init();
+</script>
+</body>
+</html>
+
+

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход — IT-MANIA</title>
+  <link rel="stylesheet" href="../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a0033, #330066, #9900FF);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-box {
+      background: white;
+      border-radius: 28px;
+      padding: 48px 40px;
+      width: min(420px, 100%);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      text-align: center;
+      position: relative;
+    }
+    .login-logo { width: 120px; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto; }
+    .login-box h1 { font-size: 1.6rem; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+    .login-box p { color: #888; margin-bottom: 28px; font-size: 0.9rem; }
+    .login-input {
+      width: 100%;
+      border: 2px solid #eee;
+      border-radius: 30px;
+      padding: 14px 20px;
+      font-size: 1rem;
+      margin-bottom: 14px;
+      outline: none;
+      transition: border-color 0.3s;
+      font-family: inherit;
+    }
+    .login-input:focus { border-color: var(--accent); }
+    .login-btn {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.3s;
+      font-family: inherit;
+    }
+    .login-btn:hover { background: var(--accent-dark); transform: translateY(-2px); }
+    .login-btn:active { transform: scale(0.97); }
+    .login-error { color: #cc0000; font-size: 0.9rem; margin-top: 8px; display: none; }
+    .back-link { display: block; margin-top: 20px; color: #888; font-size: 0.9rem; text-decoration: none; }
+    .back-link:hover { color: var(--accent); }
+    /* Плавающие звёздочки на фоне */
+    .bg-star {
+      position: fixed;
+      pointer-events: none;
+      font-size: 1.5rem;
+      animation: bgFloat linear infinite;
+      opacity: 0.4;
+    }
+    @keyframes bgFloat {
+      0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      10% { opacity: 0.4; }
+      90% { opacity: 0.4; }
+      100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Фоновые звёздочки -->
+<div id="bgStars"></div>
+
+<div class="login-box">
+  <img src="../images/star.gif?v=3" class="login-logo" alt="IT-MANIA" onerror="this.onerror=null; this.onerror=null; this.src='../images/star.png'">
+  <h1>IT-MANIA</h1>
+  <p>Войдите в свой личный кабинет</p>
+
+  <input class="login-input" type="text" id="loginInput" placeholder="Логин" autocomplete="username">
+  <input class="login-input" type="password" id="passInput" placeholder="Пароль" autocomplete="current-password">
+  <div class="login-error" id="loginError">Неверный логин или пароль</div>
+  <br>
+  <button class="login-btn" onclick="doLogin()">Войти 🚀</button>
+
+  <a href="../index.html" class="back-link">← Вернуться на главную</a>
+</div>
+
+<script>
+  // Создаём фоновые звёздочки
+  const emojis = ['⭐','✨','🌟','💫','🔮','💜'];
+  const container = document.getElementById('bgStars');
+  for (let i = 0; i < 15; i++) {
+    const s = document.createElement('div');
+    s.className = 'bg-star';
+    s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    s.style.left = Math.random() * 100 + 'vw';
+    s.style.animationDuration = (8 + Math.random() * 12) + 's';
+    s.style.animationDelay = (Math.random() * 10) + 's';
+    container.appendChild(s);
+  }
+
+  // Enter для входа
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  async function doLogin() {
+    const login = document.getElementById('loginInput').value.trim();
+    const password = document.getElementById('passInput').value;
+    const errEl = document.getElementById('loginError');
+    errEl.style.display = 'none';
+
+    if (!login || !password) { errEl.textContent = 'Заполните все поля'; errEl.style.display = 'block'; return; }
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || 'Ошибка входа'; errEl.style.display = 'block'; return; }
+
+      // Сохраняем токен
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('role', data.role);
+      localStorage.setItem('userId', data.id);
+
+      // Перенаправляем по роли
+      const routes = {
+        student: 'student/dashboard.html',
+        teacher: 'teacher/dashboard.html',
+        parent: 'parent/dashboard.html',
+        admin: 'admin/dashboard.html'
+      };
+      window.location.href = routes[data.role] || 'student/dashboard.html';
+    } catch {
+      errEl.textContent = 'Ошибка соединения с сервером';
+      errEl.style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>
+
+
