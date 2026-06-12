@@ -228,10 +228,15 @@ server.listen(PORT, () => {
 
 server.on('error', (err) => {
   console.error('Ошибка сервера:', err);
-  process.exit(1);
 });
 
 // Подключаем MongoDB асинхронно — даже если она упадёт, сервер будет отвечать
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, {
+  serverSelectionTimeoutMS: 5000,
+  connectTimeoutMS: 5000
+})
   .then(() => console.log('MongoDB подключена'))
-  .catch(err => console.error('Ошибка MongoDB:', err.message));
+  .catch(err => {
+    console.error('Ошибка MongoDB:', err.message);
+    console.log('Сервер продолжает работу без MongoDB');
+  });
