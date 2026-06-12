@@ -219,19 +219,19 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// Подключение к MongoDB и запуск
+// Запускаем сервер ДО подключения к MongoDB
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+  console.log(`Сервер запущен на порту ${PORT}`);
+});
+
+server.on('error', (err) => {
+  console.error('Ошибка сервера:', err);
+  process.exit(1);
+});
+
+// Подключаем MongoDB асинхронно — даже если она упадёт, сервер будет отвечать
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('MongoDB подключена');
-    const PORT = process.env.PORT || 3000;
-
-    server.listen(PORT, () => {
-      console.log(`Сервер запущен на порту ${PORT}`);
-    });
-
-    server.on('error', (err) => {
-      console.error('Ошибка сервера:', err);
-      process.exit(1);
-    });
-  })
-  .catch(err => console.error('Ошибка MongoDB:', err));
+  .then(() => console.log('MongoDB подключена'))
+  .catch(err => console.error('Ошибка MongoDB:', err.message));
