@@ -223,41 +223,15 @@ app.get('*', (req, res) => {
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB подключена');
-    const PORT = 3000;
+    const PORT = process.env.PORT || 3000;
 
-    // Если порт занят — убиваем старый процесс и запускаемся заново
-    const tryListen = (retries = 1) => {
-      server.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
-      server.on('error', (err) => {
-        if (err.code === 'EADDRINUSE' && retries > 0) {
-          console.log(`Порт ${PORT} занят, освобождаю...`);
-          server.removeAllListeners('error');
-          server.close();
-          const { execSync } = require('child_process');
-          try {
-            if (process.platform === 'win32') {
-              const result = execSync(`netstat -ano | findstr :${PORT}`, { encoding: 'utf8', shell: true, timeout: 5000 });
-              const lines = result.split('\n').filter(l => l.includes('LISTENING'));
-              for (const line of lines) {
-                const parts = line.trim().split(/\s+/);
-                const pid = parts[parts.length - 1];
-                if (pid && pid !== String(process.pid)) {
-                  try { execSync(`taskkill /PID ${pid} /F`, { shell: true, timeout: 3000 }); } catch (_) {}
-                }
-              }
-            } else {
-              execSync(`fuser -k ${PORT}/tcp`, { shell: true, timeout: 5000 });
-            }
-          } catch (_) {}
-          // После убийства даём ОС секунду и пробуем снова
-          setTimeout(() => tryListen(retries - 1), 1000);
-        } else {
-          console.error('Ошибка сервера:', err);
-          process.exit(1);
-        }
-      });
-    };
+    server.listen(PORT, () => {
+      console.log(`Сервер запущен на порту ${PORT}`);
+    });
 
-    tryListen();
+    server.on('error', (err) => {
+      console.error('Ошибка сервера:', err);
+      process.exit(1);
+    });
   })
   .catch(err => console.error('Ошибка MongoDB:', err));

@@ -1,0 +1,14 @@
+meta:
+  environment: node
+  name: it-mania
+  default-command: node server/server.js
+build:
+  skip: false
+  commands:
+    - npm install
+run:
+  command: node server/server.js
+  ports:
+    - port: 3000
+      protocol: http
+      target-port: 3000
