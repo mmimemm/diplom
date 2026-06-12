@@ -8,6 +8,8 @@ const courseSchema = new mongoose.Schema({
   ageMin: { type: Number, default: 7 },
   ageMax: { type: Number, default: 17 },
   modules: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Module' }],
+  scheduleType: { type: String, enum: ['weekday', 'weekend', 'online'], default: 'online' },
+  price: { type: Number, default: 0 },  // стоимость в месяц, 0 = бесплатно
   isActive: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now }
 });

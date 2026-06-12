@@ -7,16 +7,71 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="../css/landing.css">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* Дополнительные стили для страницы занятий, использующие тему лендинга */
+    .lessons-section {
+      padding: 60px 20px;
+      text-align: center;
+    }
+    .lessons-section h2 {
+      font-size: 2rem;
+      font-weight: 900;
+      margin-bottom: 30px;
+      color: #1a1a2e;
+    }
+    .lessons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .lessons-card {
+      border: 3px solid #1a1a2e;
+      border-radius: 24px;
+      padding: 24px 16px;
+      box-shadow: 6px 6px 0 #1a1a2e;
+      transition: transform 0.25s, box-shadow 0.25s;
+      font-family: 'Nunito', sans-serif;
+    }
+    .lessons-card:hover {
+      transform: translate(-3px, -3px);
+      box-shadow: 10px 10px 0 #1a1a2e;
+    }
+    .lessons-card img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      margin-bottom: 12px;
+    }
+    .lessons-card .card-title {
+      font-weight: 800;
+      font-size: 1.1rem;
+      margin-bottom: 4px;
+    }
+    .lessons-card .card-sub {
+      font-size: 0.85rem;
+      color: #ffffff;
+    }
+    .lessons-icon {
+      font-size: 3rem;
+      margin-bottom: 8px;
+    }
+  </style>
 </head>
 <body>
 
-<!-- Навбар такой же -->
+<!-- Навбар (в стиле лендинга) -->
 <nav id="navbar">
-  <img src="../images/star.gif?v=2" class="nav-logo" alt="IT-MANIA" onclick="location.href='../index.html'">
+  <div class="nav-brand" onclick="location.href='../index.html'" role="button" tabindex="0">
+    <img src="../images/star.gif?v=2" class="nav-logo" alt="IT-MANIA">
+    <span class="nav-brand-text">IT-MANIA</span>
+  </div>
   <div class="nav-links" id="navLinks">
     <a href="../index.html#skills">Программа</a>
-    <a href="../index.html#about">О нас</a>
+    <a href="../index.html#gallery">О нас</a>
     <a href="../index.html#pricing">Стоимость</a>
+    <a href="../index.html#reviews">Отзывы</a>
     <a href="../index.html#footer">Контакты</a>
   </div>
   <div class="nav-right">
@@ -28,39 +83,97 @@
   </div>
 </nav>
 
-<section id="lessons-page">
-  <div class="lessons-inner">
-    <div class="lessons-left" data-anim="left">
-      <h2>Количество занятий:</h2>
-      <img src="../images/kolcat.png" alt="Кот">
+<!-- ===== ГЕРОЙ (в стиле лендинга) ===== -->
+<section id="hero" style="min-height:50vh;padding:100px 20px 40px;">
+  <div class="hero-content">
+    <img src="../images/kolcat.png" class="hero-logo" alt="Как проходят занятия" style="max-width:240px;">
+    <h1 style="font-size:2.6rem;margin:16px 0 8px;color:#ffffff;">Как проходят занятия</h1>
+    <p style="font-size:1.15rem;max-width:600px;margin:0 auto;color:#ffc7ff; text-align: center;">Мы подбираем оптимальный график для каждого ученика, учитывая его возраст, цели и уровень подготовки.</p>
+  </div>
+
+</section>
+
+<!-- ===== РЕКОМЕНДУЕМЫЙ ФОРМАТ ===== -->
+<section class="lessons-section" style="background:#ffffff;">
+  <h2 data-anim>Рекомендуемый формат</h2>
+  <div class="lessons-grid">
+    <div class="lessons-card" data-anim style="background: #BB44FF;">
+      <div class="lessons-icon">🎯</div>
+      <div class="card-title">2 занятия в неделю</div>
+      <div class="card-sub">по программированию</div>
     </div>
-    <div class="lessons-right" data-anim="right">
-      <div class="lesson-card">
-        <img src="../images/kol1.png" alt="">
-        <div class="lesson-card-text">
-          <h4>Комплексное программирование</h4>
-          <p>2 раза/нед</p>
-        </div>
+    <div class="lessons-card" data-anim style="background: #BB44FF;">
+      <div class="lessons-icon">🌍</div>
+      <div class="card-title">1 занятие в неделю</div>
+      <div class="card-sub">по английскому языку</div>
+    </div>
+    <div class="lessons-card" data-anim style="background: #BB44FF;">
+      <div class="lessons-icon">💻</div>
+      <div class="card-title">Доступ 24/7</div>
+      <div class="card-sub">к онлайн-платформе</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ДЛИТЕЛЬНОСТЬ ЗАНЯТИЙ ===== -->
+<section class="lessons-section" style="background:#ffffff;">
+  <h2 data-anim>Длительность занятия</h2>
+  <div class="lessons-grid">
+    <div class="lessons-card" data-anim style="background: #BB44FF;">
+      <div class="lessons-icon">⏱️</div>
+      <div class="card-title" style="font-size:1.3rem;">60 минут</div>
+      <div class="card-sub">для детей 7–10 лет</div>
+    </div>
+    <div class="lessons-card" data-anim style="background: #BB44FF;">
+      <div class="lessons-icon">⏱️</div>
+      <div class="card-title" style="font-size:1.3rem;">90 минут</div>
+      <div class="card-sub">для детей 11–14 лет</div>
+    </div>
+    <div class="lessons-card" data-anim style="background: #BB44FF;">
+      <div class="lessons-icon">⏱️</div>
+      <div class="card-title" style="font-size:1.3rem;">120 минут</div>
+      <div class="card-sub">для подростков 15–17 лет</div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ===== ПОДВАЛ ===== -->
+<section id="footer">
+  <div class="footer-inner">
+    <div class="footer-logo-row">
+      <img src="../images/it.png" alt="IT-MANIA" class="footer-logo">
+    </div>
+    <div class="footer-map-row">
+      <div class="footer-map">
+        <iframe
+          src="https://yandex.ru/map-widget/v1/?ll=37.617635%2C55.755814&z=15&l=map"
+          allowfullscreen
+          title="Карта">
+        </iframe>
       </div>
-      <div class="lesson-card">
-        <img src="../images/kol2.png" alt="">
-        <div class="lesson-card-text">
-          <h4>Английский язык</h4>
-          <p>1 раз/нед</p>
-        </div>
+      <div class="footer-address">
+        <h4>📍 Наш главный филиал</h4>
+        <p>г. Москва, ул. Примерная, д. 1</p>
+        <p>📞 +7 (999) 123-45-67</p>
+        <p>✉️ info@it-mania.ru</p>
+        <p>🕐 Пн-Пт: 10:00 — 20:00</p>
+        <p>🕐 Сб-Вс: 10:00 — 18:00</p>
       </div>
-      <div class="lesson-card">
-        <img src="../images/kol3.png" alt="">
-        <div class="lesson-card-text">
-          <h4>Индивидуальные занятия</h4>
-          <p>1 раз/нед</p>
-        </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 IT-MANIA. Все права защищены.</p>
+      <div class="social-links">
+        <a href="#">ВКонтакте</a>
+        <a href="#">Telegram</a>
+        <a href="#">Instagram</a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Модалка заявки (та же) -->
+<!-- ===== МОДАЛКА ЗАЯВКИ ===== -->
 <div class="modal-overlay" id="applyModal">
   <div class="modal-box">
     <img src="../images/form.png" class="modal-img-top" alt="">
@@ -81,8 +194,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  function openModal(id) { document.getElementById(id).classList.add('active'); }
-  function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+  function openModal(id) { document.getElementById(id).classList.add('active'); document.body.style.overflow = 'hidden'; }
+  function closeModal(id) { document.getElementById(id).classList.remove('active'); document.body.style.overflow = ''; }
   function toggleNav() { document.getElementById('navLinks').classList.toggle('open'); }
   function toggleFormBtn(c, b) { document.getElementById(b).classList.toggle('ready', document.getElementById(c).checked); }
 
@@ -95,19 +208,34 @@
     };
     try { await fetch('/api/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); } catch {}
     closeModal('applyModal');
+    spawnStars();
   }
 
-  // Анимации
-  window.addEventListener('scroll', () => {
-    document.querySelectorAll('[data-anim]').forEach(el => {
-      if (el.getBoundingClientRect().top < window.innerHeight - 80) el.classList.add('visible');
-    });
+  function spawnStars(count = 20) {
+    const emojis = ['⭐', '✨', '🌟', '💫', '🎉', '🎊'];
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        const star = document.createElement('div');
+        star.className = 'star-particle';
+        star.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        star.style.left = Math.random() * window.innerWidth + 'px';
+        star.style.top = Math.random() * window.innerHeight + 'px';
+        document.body.appendChild(star);
+        setTimeout(() => star.remove(), 1500);
+      }, i * 80);
+    }
+  }
+
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
   });
-  setTimeout(() => document.querySelectorAll('[data-anim]').forEach(el => {
-    if (el.getBoundingClientRect().top < window.innerHeight - 80) el.classList.add('visible');
-  }), 100);
+
+  // Скролл-анимации (data-anim)
+  const animObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('[data-anim]').forEach(el => animObserver.observe(el));
 </script>
+  <script src="../js/theme-manager.js"></script>
 </body>
 </html>
-
-

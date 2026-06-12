@@ -1,3 +1,13 @@
+// ===== ГЛОБАЛЬНЫЙ РЕЕСТР ЭФФЕКТОВ АВАТАРА (доступен на ВСЕХ страницах) =====
+window.AVATAR_EFFECTS = {
+  'clownnose': { icon: '🤡', name: 'Клоунский нос' },
+  'headphones': { icon: '🎧', name: 'Наушники' },
+  'helmet':     { icon: '⛑️', name: 'Каска' },
+  'unicorn':    { icon: '🦄', name: 'Единорог' },
+  'sunglasses': { icon: '🕶️', name: 'Очки' },
+  'superbadge': { icon: '⭐', name: 'Супер-значок' }
+};
+
 // ===== ОБЩИЕ УТИЛИТЫ ПРИЛОЖЕНИЯ =====
 
 const API = '';  // Относительные пути
@@ -64,38 +74,181 @@ function requireAuth(allowedRoles) {
   return true;
 }
 
-// ===== ЗВУК =====
-let soundEnabled = localStorage.getItem('sound') !== 'false';
+// ===== АВАТАР В ТОПБАРЕ — глобальная функция =====
+// Дожидается загрузки shopEffects, чтобы корректно отображать купленные аватары
+async function updateTopbarAvatar(userData) {
+  const avatarEl = document.getElementById('userAvatar');
+  if (!avatarEl) return;
+  
+  let user = userData;
+  if (!user) {
+    user = await api('/api/auth/me');
+  }
+  if (!user) {
+    const fallback = avatarEl.getAttribute('data-fallback') || '?';
+    avatarEl.innerHTML = '';
+    avatarEl.textContent = fallback;
+    avatarEl.style.background = '';
+    return;
+  }
+  
+  // Сбрасываем содержимое
+  if (avatarEl.querySelector('img')) avatarEl.innerHTML = '';
+  avatarEl.innerHTML = '';
+  
+  // 1) Фото аватара — наивысший приоритет
+  if (user.avatarConfig?.photo) {
+    avatarEl.innerHTML = `<img src="${user.avatarConfig.photo}" alt="avatar" onerror="this.style.display='none'">`;
+    avatarEl.style.background = 'transparent';
+    return;
+  }
+  
+  // 2) Shop-эффекты аватара — сначала дожидаемся загрузки shopEffects
+  var unlocked = user.avatarConfig?.unlockedItems || [];
+  if (unlocked.length > 0) {
+    // Дожидаемся загрузки shopEffects, если ещё не загружены
+    if (typeof loadShopEffects === 'function' && (!window.shopEffects || !window.shopEffects.avatarItems)) {
+      try { await loadShopEffects(); } catch(e) {}
+    }
+    
+    var lastEffect = unlocked[unlocked.length - 1];
+    var effectDef = window.AVATAR_EFFECTS || {};
+    var foundIcon = effectDef[lastEffect] ? effectDef[lastEffect].icon : null;
+    
+    // Fallback: ищем в shopEffects.avatarItems (на случай динамических эффектов)
+    if (!foundIcon && window.shopEffects && window.shopEffects.avatarItems) {
+      var matched = window.shopEffects.avatarItems.find(function(it) { return it.effect === lastEffect; });
+      if (matched && matched.icon) foundIcon = matched.icon;
+    }
+    
+    // Fallback: используем иконку, сохранённую сервером при покупке
+    if (!foundIcon && user.avatarConfig?.lastPurchasedAvatarIcon) {
+      foundIcon = user.avatarConfig.lastPurchasedAvatarIcon;
+    }
+    
+    // Fallback: ищем во всех купленных предметах
+    if (!foundIcon && window.shopEffects && window.shopEffects.avatarItems) {
+      for (var i = unlocked.length - 1; i >= 0; i--) {
+        var match = window.shopEffects.avatarItems.find(function(it) { return it.effect === unlocked[i]; });
+        if (match && match.icon) { foundIcon = match.icon; break; }
+      }
+    }
+    
+    if (foundIcon) {
+      avatarEl.textContent = foundIcon;
+      avatarEl.style.background = '';
+      return;
+    }
+  }
+  
+  // 3) Эмодзи аватара (очки или первая буква имени)
+  var glassesEmoji = user.avatarConfig?.glasses === 'cool' ? '😎'
+    : user.avatarConfig?.glasses === 'round' ? '🤓' : null;
+  avatarEl.textContent = glassesEmoji || user.firstName?.charAt(0).toUpperCase() || '?';
+  avatarEl.style.background = '';
+}
 
-// Мелодичные звуки на кнопки
+// ===== ЗВУК — единая система без задваивания =====
+let soundEnabled = localStorage.getItem('sound') !== 'false';
+let _soundCtx = null;
+let _soundLastPlay = 0;
+const _soundMinInterval = 40; // ms — защита от задваивания
+
+function _getSoundCtx() {
+  if (!_soundCtx) {
+    _soundCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (_soundCtx.state === 'suspended') {
+    _soundCtx.resume();
+  }
+  return _soundCtx;
+}
+
+// Детские мелодии и звуки
+const _soundDefs = {
+  // Короткие клики — тихие, быстрые
+  click:       { wave:'sine', vol:0.04, notes:[[800,0.04]] },
+  hover:       { wave:'sine', vol:0.03, notes:[[1000,0.03]] },
+  tap:         { wave:'triangle', vol:0.05, notes:[[700,0.03]] },
+  
+  // Игровые звуки
+  success:     { wave:'sine', vol:0.08, notes:[[523,0.08],[659,0.08],[784,0.15]] },
+  coin:        { wave:'sine', vol:0.08, notes:[[1047,0.06],[1319,0.12]] },
+  ding:        { wave:'sine', vol:0.06, notes:[[660,0.1]] },
+  error:       { wave:'sawtooth', vol:0.06, notes:[[330,0.08],[220,0.25]] },
+  
+  // Длинные мелодии
+  levelup:     { wave:'sine', vol:0.08, notes:[[523,0.08],[659,0.08],[784,0.08],[1047,0.25]] },
+  magic:       { wave:'sine', vol:0.07, notes:[[1047,0.06],[1319,0.06],[1568,0.15]] },
+  achievement: { wave:'sine', vol:0.08, notes:[[784,0.1],[1047,0.1],[1175,0.2]] },
+  notification:{ wave:'sine', vol:0.06, notes:[[880,0.06],[698,0.06],[784,0.1]] },
+  buy:         { wave:'triangle', vol:0.08, notes:[[784,0.08],[1047,0.08],[1319,0.18]] },
+  
+  // Для магазина и действий
+  open:        { wave:'triangle', vol:0.07, notes:[[600,0.06],[900,0.1]] },
+  close:       { wave:'sine', vol:0.06, notes:[[500,0.06],[350,0.1]] },
+  swipe:       { wave:'triangle', vol:0.05, notes:[[600,0.04],[800,0.06]] },
+  
+  // Веселые детские звуки
+  fun:         { wave:'triangle', vol:0.07, notes:[[440,0.06],[554,0.06],[659,0.06],[880,0.12]] },
+  victory:     { wave:'square', vol:0.06, notes:[[784,0.1],[988,0.1],[1175,0.1],[1319,0.2]] },
+  tickle:      { wave:'sine', vol:0.05, notes:[[1200,0.03],[1400,0.03],[1600,0.03]] },
+  bounce:      { wave:'sine', vol:0.06, notes:[[600,0.04],[900,0.04],[1200,0.06]] },
+  boop:        { wave:'sine', vol:0.07, notes:[[500,0.04],[700,0.06]] },
+  drop:        { wave:'triangle', vol:0.06, notes:[[700,0.06],[500,0.06],[400,0.1]] },
+  sparkle:     { wave:'sine', vol:0.05, notes:[[1200,0.04],[1500,0.04],[1800,0.06]] },
+  meow:        { wave:'sine', vol:0.06, notes:[[700,0.06],[900,0.08],[800,0.06]] },
+  star:        { wave:'triangle', vol:0.06, notes:[[880,0.04],[1100,0.04],[1320,0.06],[1760,0.1]] },
+  chime:       { wave:'sine', vol:0.07, notes:[[1047,0.1],[1319,0.1],[1568,0.18]] },
+  
+  // Новые детские звуки — более разнообразные и весёлые
+  jump:        { wave:'sine', vol:0.07, notes:[[500,0.05],[700,0.05],[900,0.08]] },
+  slide:       { wave:'triangle', vol:0.05, notes:[[600,0.06],[400,0.06],[300,0.1]] },
+  pop:         { wave:'sine', vol:0.08, notes:[[800,0.03],[1200,0.06]] },
+  whizz:       { wave:'sine', vol:0.04, notes:[[400,0.05],[800,0.05],[1200,0.1]] },
+  zap:         { wave:'square', vol:0.05, notes:[[600,0.04],[800,0.04],[1000,0.06]] },
+  twinkle:     { wave:'sine', vol:0.06, notes:[[1300,0.04],[1600,0.04],[2000,0.08]] },
+  honk:        { wave:'square', vol:0.06, notes:[[400,0.06],[500,0.08]] },
+  purr:        { wave:'sine', vol:0.04, notes:[[200,0.08],[250,0.08],[220,0.12]] },
+  plop:        { wave:'triangle', vol:0.07, notes:[[400,0.04],[300,0.06],[200,0.08]] },
+  squeak:      { wave:'sine', vol:0.06, notes:[[1000,0.03],[1200,0.04]] },
+  laugh:       { wave:'triangle', vol:0.05, notes:[[600,0.04],[800,0.04],[700,0.04],[900,0.06]] },
+  blink:       { wave:'sine', vol:0.04, notes:[[1400,0.02],[1600,0.02]] },
+  flip:        { wave:'sine', vol:0.06, notes:[[500,0.04],[700,0.04],[900,0.06]] },
+  swoosh:      { wave:'triangle', vol:0.04, notes:[[300,0.04],[600,0.04],[900,0.06]] },
+  dingdong:    { wave:'sine', vol:0.07, notes:[[660,0.08],[880,0.08],[660,0.12]] },
+  wagga:       { wave:'square', vol:0.05, notes:[[300,0.04],[350,0.04],[400,0.04],[350,0.04]] },
+};
+
+// Троттлинг + предотвращение дублирования
 function playSound(type) {
   if (!soundEnabled) return;
+  const now = Date.now();
+  if (now - _soundLastPlay < _soundMinInterval) return;
+  _soundLastPlay = now;
+  
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const sounds = {
-      success:  [{ f:523,d:0.08 },{ f:659,d:0.08 },{ f:784,d:0.15 }],
-      coin:     [{ f:1047,d:0.06 },{ f:1319,d:0.12 }],
-      ding:     [{ f:660,d:0.12 }],
-      error:    [{ f:330,d:0.08 },{ f:220,d:0.25 }],
-      levelup:  [{ f:523,d:0.08 },{ f:659,d:0.08 },{ f:784,d:0.08 },{ f:1047,d:0.25 }],
-      click:    [{ f:800,d:0.05 }],
-      open:     [{ f:600,d:0.06 },{ f:900,d:0.1 }],
-      close:    [{ f:500,d:0.06 },{ f:350,d:0.1 }],
-      buy:      [{ f:784,d:0.08 },{ f:1047,d:0.08 },{ f:1319,d:0.2 }]
-    };
-    const notes = sounds[type] || sounds.click;
+    const ctx = _getSoundCtx();
+    const def = _soundDefs[type] || _soundDefs.click;
+    const { wave, vol, notes } = def;
     let t = ctx.currentTime;
-    notes.forEach(n => {
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.type = 'sine';
-      o.frequency.setValueAtTime(n.f, t);
-      g.gain.setValueAtTime(0.07, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + n.d);
-      o.start(t); o.stop(t + n.d);
-      t += n.d;
+    
+    notes.forEach(([freq, dur]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = wave;
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(vol, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      osc.start(t);
+      osc.stop(t + dur);
+      t += dur;
     });
-  } catch(e) {}
+  } catch(e) {
+    // Игнорируем ошибки AudioContext
+  }
 }
 
 function toggleSound() {
@@ -103,6 +256,7 @@ function toggleSound() {
   localStorage.setItem('sound', soundEnabled);
   const btn = document.getElementById('soundBtn');
   if (btn) btn.textContent = soundEnabled ? '🔊' : '🔇';
+  if (soundEnabled) playSound('ding');
 }
 
 // ===== ЗВЁЗДОЧКИ =====
@@ -242,18 +396,23 @@ let catClickIndex = 0;
 let catAutoIndex = 0;
 
 function initCatAssistant() {
+  // Если страница сама управляет котом (песочница), не трогаем
+  if (window._sandboxCatManaged) return;
   const cat = document.getElementById('cat-assistant');
   if (!cat) return;
 
   const bubble = cat.querySelector('.cat-bubble');
   const img = cat.querySelector('img');
 
-  // Клик по коту — игривые фразы
+    // Клик по коту — игривые фразы
   cat.addEventListener('click', () => {
     if (!bubble) return;
     const msg = catClickMessages[catClickIndex % catClickMessages.length];
     catClickIndex++;
-    showCatBubble(cat, bubble, msg);
+    bubble.textContent = msg;
+    cat.classList.add('talking');
+    clearTimeout(cat._bubbleTimer);
+    cat._bubbleTimer = setTimeout(() => cat.classList.remove('talking'), 4000);
     playSound('ding');
     // Маленький эффект при клике
     if (img) {
@@ -271,12 +430,20 @@ function initCatAssistant() {
     if (!bubble) return;
     const msg = catMessages[catAutoIndex % catMessages.length];
     catAutoIndex++;
-    showCatBubble(cat, bubble, msg);
+    bubble.textContent = msg;
+    cat.classList.add('talking');
+    clearTimeout(cat._bubbleTimer);
+    cat._bubbleTimer = setTimeout(() => cat.classList.remove('talking'), 4000);
   }, 25000);
 
   // Первое сообщение через 3 секунды
   setTimeout(() => {
-    if (bubble) showCatBubble(cat, bubble, 'Привет! Нажми на меня 😺');
+    if (bubble) {
+      bubble.textContent = 'Привет! Нажми на меня 😺';
+      cat.classList.add('talking');
+      clearTimeout(cat._bubbleTimer);
+      cat._bubbleTimer = setTimeout(() => cat.classList.remove('talking'), 4000);
+    }
   }, 3000);
 }
 
@@ -344,6 +511,54 @@ const miniGames = [
     options: ['<i>', '<u>', '<b>', '<p>'],
     correct: 2,
     explanation: 'Тег <b> делает текст жирным!'
+  },
+  {
+    question: 'Какое расширение у файла с кодом на Python?',
+    options: ['.py', '.js', '.html', '.css'],
+    correct: 0,
+    explanation: 'Файлы на Python имеют расширение .py!'
+  },
+  {
+    question: 'Какое ключевое слово используется для создания переменной в JavaScript?',
+    options: ['var', 'make', 'create', 'new'],
+    correct: 0,
+    explanation: 'В JavaScript используется var, let или const для создания переменных!'
+  },
+  {
+    question: 'Как называется процесс исправления ошибок в коде?',
+    options: ['Компиляция', 'Документирование', 'Отладка', 'Тестирование'],
+    correct: 2,
+    explanation: 'Отладка — это процесс поиска и исправления ошибок в программе!'
+  },
+  {
+    question: 'Что такое алгоритм?',
+    options: ['Набор команд', 'Пошаговая инструкция', 'Программа', 'Данные'],
+    correct: 1,
+    explanation: 'Алгоритм — это пошаговая инструкция для решения задачи!'
+  },
+  {
+    question: 'Какой язык программирования используется для создания веб-страниц?',
+    options: ['HTML', 'C++', 'Python', 'Java'],
+    correct: 0,
+    explanation: 'HTML используется для структуры веб-страниц вместе с CSS и JavaScript!'
+  },
+  {
+    question: 'Что делает оператор "==" в Python?',
+    options: ['Присваивает значение', 'Сравнивает значения', 'Умножает значения', 'Создает список'],
+    correct: 1,
+    explanation: 'Оператор "==" сравнивает два значения на равенство!'
+  },
+  {
+    question: 'Сколько бит в одном байте?',
+    options: ['4', '8', '16', '32'],
+    correct: 1,
+    explanation: 'В одном байте 8 бит!'
+  },
+  {
+    question: 'Какой браузер используется для просмотра веб-страниц?',
+    options: ['Chrome', 'Excel', 'Photoshop', 'Word'],
+    correct: 0,
+    explanation: 'Chrome — это веб-браузер для просмотра сайтов!'
   }
 ];
 
@@ -407,6 +622,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const btn = e.target.closest('button:not(#soundBtn), .btn-accent, .btn-white, .sidebar a, .stat-card, .skill-card');
     if (btn) playSound('click');
   });
+
+  // Звук при наведении на интерактивные элементы
+  document.addEventListener('mouseover', e => {
+    const hoverable = e.target.closest('button:not(#soundBtn), .btn-accent, .btn-white, .sidebar a, .stat-card, .skill-card, .module-card, .lesson-item');
+    if (hoverable && e.target === hoverable) {
+      playSound('hover');
+    }
+  });
+
+  // Клик по аватару в топбаре — переход в профиль для ВСЕХ ролей
+  // Используем АБСОЛЮТНЫЙ путь, чтобы работало с любой страницы
+  document.addEventListener('click', function(e) {
+    var avatar = e.target.closest('.user-avatar');
+    if (!avatar) return;
+    // Не перенаправляем, если внутри аватара уже есть onclick (например, в dashboard студента)
+    if (avatar.getAttribute('onclick')) return;
+    // Ведём на профиль в зависимости от роли
+    var role = getRole();
+    var profilePaths = {
+      student: '/app/student/profile.html',
+      parent: '/app/parent/profile.html',
+      teacher: '/app/teacher/profile.html',
+      admin: '/app/admin/profile.html'
+    };
+    location.href = profilePaths[role] || '/app/student/profile.html';
+  });
+
+  // Автоматически подгружаем аватар в топбаре для всех страниц
+  // Первая попытка — через 500ms (для страниц, где данные уже загружены)
+  setTimeout(function autoLoadAvatar() {
+    var avatarEl = document.getElementById('userAvatar');
+    if (!avatarEl || typeof updateTopbarAvatar !== 'function') return;
+    var currentText = (avatarEl.textContent || '').trim();
+    // Обновляем, если аватар показывает fallback ("?" или пусто) или устаревшую заглушку
+    // НЕ трогаем, если уже установлен эмодзи-аватар (смайлик, фото, shop-эффект)
+    if (currentText === '?' || currentText === '' || currentText === 'A') {
+      updateTopbarAvatar();
+    }
+  }, 500);
 
   // Кнопка выхода
   document.getElementById('logoutBtn')?.addEventListener('click', (e) => {

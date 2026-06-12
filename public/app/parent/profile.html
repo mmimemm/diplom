@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Профиль — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <style>
+    .avatar-builder { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0; }
+    .avatar-opt {
+      width:52px; height:52px; border-radius:14px; border:3px solid transparent;
+      background:var(--bg); display:flex; align-items:center; justify-content:center;
+      font-size:1.6rem; cursor:pointer; transition:0.3s;
+    }
+    .avatar-opt.selected { border-color:var(--accent); background:rgba(153,0,255,0.1); }
+    .avatar-opt:hover { transform:scale(1.1); }
+    .avatar-preview {
+      width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,var(--accent-light),var(--accent));
+      display:flex; align-items:center; justify-content:center; font-size:3rem;
+      margin:0 auto 16px; box-shadow:0 4px 20px rgba(153,0,255,0.3);
+    }
+    .section-label { font-weight:700; font-size:0.9rem; color:#888; margin:12px 0 6px; }
+  </style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'">
+    <span>IT-MANIA</span>
+  </div>
+  <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
+  <a href="progress.html"><span class="icon">📊</span> Успеваемость</a>
+  <a href="payments.html"><span class="icon">💳</span> Оплата</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Обращения</a>
+  <div class="sidebar-bottom">
+    <a href="profile.html" class="active"><span class="icon">👤</span> Профиль</a>
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
+    <h1>👤 Мой профиль</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <button class="notif-btn">🔔 <span class="notif-badge" id="notifBadge"></span></button>
+      <div class="user-avatar" id="userAvatar">?</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <!-- Аватар-конструктор -->
+    <div class="content-card">
+      <h2>🎨 Мой аватар</h2>
+      <div class="avatar-preview" id="avatarPreview">😺</div>
+
+      <!-- Загрузка фото -->
+      <div class="section-label">📷 Загрузить фото</div>
+      <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+        <label style="background:var(--accent);color:white;padding:10px 20px;border-radius:30px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:0.9rem;">
+          📸 Выбрать фото
+          <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="uploadAvatarPhoto()">
+        </label>
+        <button onclick="clearAvatarPhoto()" style="background:#eee;border:none;border-radius:30px;padding:10px 20px;font-weight:700;cursor:pointer;font-size:0.9rem;">🗑 Убрать фото</button>
+      </div>
+      <div id="avatarUploadStatus" style="display:none;font-size:0.85rem;color:#00aa44;margin-bottom:8px;"></div>
+
+      <!-- Секция для предметов из магазина — заполняется динамически через shop-effects.js -->
+      <div id="shopAvatarSection"></div>
+
+      <button onclick="saveAvatar()" class="btn-accent" style="width:100%;margin-top:16px;border-radius:20px;padding:12px;">
+        💾 Сохранить аватар
+      </button>
+    </div>
+
+    <!-- Данные профиля -->
+    <div>
+      <div class="content-card">
+        <h2>📋 Мои данные</h2>
+        <div id="profileInfo" style="margin-bottom:16px;"></div>
+        <div class="section-label">Email</div>
+        <input id="pEmail" type="email" placeholder="your@email.com"
+          style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:10px;">
+        <div class="section-label">Телефон</div>
+        <input id="pPhone" type="tel" placeholder="+7 (999) 000-00-00"
+          style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:16px;">
+        <button onclick="saveProfile()" class="btn-accent" style="width:100%;border-radius:20px;padding:12px;">
+          Сохранить
+        </button>
+      </div>
+
+      <!-- Настройки -->
+      <div class="content-card">
+        <h2>⚙️ Настройки</h2>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--bg);">
+          <span style="font-weight:600;">🔊 Звуки</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="soundToggle" onchange="toggleSound()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
+          <span style="font-weight:600;">🌙 Тёмная тема</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+  <script src="../../js/app.js"></script>
+  <script src="../../js/shop-effects.js"></script>
+  <script src="../../js/theme-manager.js"></script>
+  <script>
+    // Принимаем родителя, но не ограничиваем — подходит всем
+    requireAuth(['parent']);
+
+  let currentConfig = { hair:'default' };
+  let userData = null;
+
+  function updatePreview() {
+    const preview = document.getElementById('avatarPreview');
+    if (!preview) return;
+    
+    // Если есть фото — показываем его
+    if (currentConfig.photo) {
+      preview.innerHTML = `<img src="${currentConfig.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      return;
+    }
+
+    // Определяем эмодзи: приоритет shop-предмета (единый реестр AVATAR_EFFECTS)
+    let emoji = '😊';
+    var unlocked = currentConfig.unlockedItems || [];
+    if (unlocked.length > 0) {
+      var lastEffect = unlocked[unlocked.length - 1];
+      var effectDef = (window.AVATAR_EFFECTS || {})[lastEffect];
+      if (effectDef) {
+        emoji = effectDef.icon;
+      } else {
+        // Fallback: ищем в shopEffects.avatarItems
+        var effects = window.shopEffects;
+        if (effects && effects.avatarItems) {
+          var matched = effects.avatarItems.find(function(it) { return it.effect === lastEffect; });
+          if (matched && matched.icon) emoji = matched.icon;
+        }
+      }
+    }
+
+    preview.innerHTML = '';
+    preview.textContent = emoji;
+  }
+
+  async function uploadAvatarPhoto() {
+    const fileInput = document.getElementById('avatarFileInput');
+    const file = fileInput.files[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    const status = document.getElementById('avatarUploadStatus');
+    status.textContent = '⏳ Загрузка...';
+    status.style.display = 'block';
+    status.style.color = '#888';
+    
+    try {
+      const res = await fetch('/api/upload-avatar', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + getToken() },
+        body: formData
+      });
+      const data = await res.json();
+      if (data.photo) {
+        currentConfig.photo = data.photo;
+        updatePreview();
+        status.textContent = '✅ Фото загружено!';
+        status.style.color = '#00aa44';
+        playSound('success');
+      }
+    } catch (e) {
+      status.textContent = '❌ Ошибка загрузки';
+      status.style.color = '#cc0000';
+    }
+    setTimeout(() => { status.style.display = 'none'; }, 3000);
+  }
+
+  function clearAvatarPhoto() {
+    currentConfig.photo = null;
+    updatePreview();
+    const status = document.getElementById('avatarUploadStatus');
+    status.textContent = '🔄 Фото удалено';
+    status.style.display = 'block';
+    status.style.color = '#888';
+    setTimeout(() => { status.style.display = 'none'; }, 2000);
+    playSound('click');
+  }
+
+  async function init() {
+    userData = await api('/api/auth/me');
+    if (!userData) return;
+    
+    // Используем глобальную функцию из app.js
+    if (typeof window.updateTopbarAvatar === 'function') {
+      await window.updateTopbarAvatar(userData);
+    } else {
+      document.getElementById('userAvatar').textContent = userData.firstName?.charAt(0).toUpperCase() || '?';
+    }
+    
+    document.getElementById('pEmail').value = userData.email || '';
+    document.getElementById('pPhone').value = userData.phone || '';
+
+    document.getElementById('profileInfo').innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div><span style="color:#888;font-size:0.85rem;">Логин:</span> <b>${userData.login}</b></div>
+        <div><span style="color:#888;font-size:0.85rem;">Имя:</span> <b>${userData.firstName} ${userData.lastName || ''}</b></div>
+        <div><span style="color:#888;font-size:0.85rem;">Роль:</span> <b>Родитель</b></div>
+      </div>`;
+
+    // Восстанавливаем аватар
+    if (userData.avatarConfig) {
+      currentConfig = { ...currentConfig, ...userData.avatarConfig };
+      updatePreview();
+    }
+
+    // Восстанавливаем тему из theme-manager
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme === 'dark' ? 'dark' : 'light');
+    document.getElementById('themeToggle').checked = savedTheme === 'dark';
+
+    // Звук
+    document.getElementById('soundToggle').checked = soundEnabled;
+    document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+  }
+
+  async function saveAvatar() {
+    const res = await api('/api/auth/me', { method: 'PATCH', body: JSON.stringify({ avatarConfig: currentConfig }) });
+    if (res) { 
+      showToast('Аватар сохранён! 🎨'); 
+      launchConfetti(); 
+      playSound('victory');
+      // Обновляем топбар — используем глобальную функцию
+      if (typeof window.updateTopbarAvatar === 'function') {
+        await window.updateTopbarAvatar(res);
+      }
+    }
+  }
+
+  async function saveProfile() {
+    const res = await api('/api/auth/me', {
+      method: 'PATCH',
+      body: JSON.stringify({ 
+        email: document.getElementById('pEmail').value, 
+        phone: document.getElementById('pPhone').value 
+      })
+    });
+    if (res) { showToast('Профиль сохранён ✅'); playSound('success'); }
+  }
+
+  function toggleTheme() {
+    const isDark = document.getElementById('themeToggle').checked;
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    playSound('magic');
+    
+    api('/api/auth/me', {
+      method: 'PATCH',
+      body: JSON.stringify({ theme: isDark ? 'dark' : 'default' })
+    });
+  }
+
+  // Загружаем предметы из магазина и показываем их в конструкторе аватара
+  init().then(function() {
+    if (typeof loadShopEffects === 'function') {
+      loadShopEffects().then(function(effects) {
+        // Синхронизируем купленные аватары из магазина с currentConfig.unlockedItems
+        if (effects && effects.avatarItems && effects.avatarItems.length > 0) {
+          var unlocked = currentConfig.unlockedItems || [];
+          var changed = false;
+          effects.avatarItems.forEach(function(item) {
+            if (item.effect && unlocked.indexOf(item.effect) === -1) {
+              unlocked.push(item.effect);
+              changed = true;
+            }
+          });
+          if (changed) {
+            currentConfig.unlockedItems = unlocked;
+            // Сохраняем на сервер
+            api('/api/auth/me', { method: 'PATCH', body: JSON.stringify({ avatarConfig: currentConfig }) });
+          }
+        }
+        
+        if (typeof showShopAvatarItems === 'function') {
+          showShopAvatarItems('shopAvatarSection', currentConfig);
+        }
+        
+        // Обновляем превью и топбар после синхронизации
+        updatePreview();
+        if (typeof window.updateTopbarAvatar === 'function') {
+          api('/api/auth/me').then(function(user) {
+            if (user) window.updateTopbarAvatar(user);
+          });
+        }
+      });
+    }
+  });
+
+  // Функция выбора предмета из магазина для аватара
+  window.selectShopAvatarItem = function(item) {
+    if (!item || !item.effect) return;
+
+    // Находим все предметы из магазина в UI
+    document.querySelectorAll('#shopAvatarItems .avatar-opt').forEach(function(opt) {
+      opt.classList.remove('selected');
+    });
+
+    // Если эффект уже есть в unlockedItems — снимаем (toggle)
+    var unlocked = currentConfig.unlockedItems || [];
+    var idx = unlocked.indexOf(item.effect);
+    if (idx >= 0) {
+      unlocked.splice(idx, 1);
+    } else {
+      // Добавляем в unlockedItems и подсвечиваем
+      unlocked.push(item.effect);
+      var target = document.querySelector('#shopAvatarItems .avatar-opt[data-effect="' + item.effect + '"]');
+      if (target) target.classList.add('selected');
+    }
+    currentConfig.unlockedItems = unlocked;
+    // Убираем фото если выбрали магазинный предмет
+    currentConfig.photo = null;
+    updatePreview();
+    playSound('ding');
+
+    // НЕМЕДЛЕННО сохраняем на сервер, чтобы при перезагрузке страницы выбор не пропал
+    api('/api/auth/me', { method: 'PATCH', body: JSON.stringify({ avatarConfig: currentConfig }) });
+  };
+
+  // Сохраняем currentConfig глобально, чтобы shop-effects.js мог его читать
+  window.currentConfig = currentConfig;
+</script>
+</body>
+</html>

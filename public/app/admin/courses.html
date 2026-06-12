@@ -17,9 +17,11 @@
   <a href="courses.html" class="active"><span class="icon">📚</span> Курсы</a>
   <a href="payments.html"><span class="icon">💳</span> Оплаты</a>
   <a href="reviews.html"><span class="icon">⭐</span> Отзывы</a>
-  <a href="tickets.html"><span class="icon">🎫</span> Тикеты</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Билетики</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
+  <a href="shop-admin.html"><span class="icon">🎪</span> Магазин</a>
   <div class="sidebar-bottom">
-    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a><a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
   </div>
 </aside>
 <main class="main-content">
@@ -27,8 +29,8 @@
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
     <h1>📚 Курсы и модули</h1>
     <div class="topbar-right">
-      <button class="sound-btn" id="soundBtn">🔊</button>
-      <div class="user-avatar">A</div>
+      <button class="sound-btn" id="soundBtn">🔊</button><button class="notif-btn" onclick="toggleNotificationsPanel()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
+      <div class="user-avatar" id="userAvatar">A</div>
     </div>
   </div>
 
@@ -148,6 +150,7 @@
 
   loadCourses();
 </script>
+  <script src="../../js/theme-manager.js"></script>
 </body>
 </html>
 

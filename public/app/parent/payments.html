@@ -28,8 +28,10 @@
   <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
   <a href="progress.html"><span class="icon">📊</span> Успеваемость</a>
   <a href="payments.html" class="active"><span class="icon">💳</span> Оплата</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
   <a href="tickets.html"><span class="icon">🎫</span> Обращения</a>
   <div class="sidebar-bottom">
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a>
     <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
   </div>
 </aside>
@@ -113,7 +115,11 @@
   async function init() {
     const user = await api('/api/auth/me');
     if (!user) return;
-    document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+    if (typeof updateTopbarAvatar === 'function') {
+      await updateTopbarAvatar(user);
+    } else {
+      document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+    }
 
     const children = await api('/api/parent/children') || [];
     const sel = document.getElementById('childSelect');
@@ -160,7 +166,6 @@
 
   init();
 </script>
+  <script src="../../js/theme-manager.js"></script>
 </body>
 </html>
-
-

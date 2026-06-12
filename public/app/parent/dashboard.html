@@ -33,8 +33,10 @@
   <a href="dashboard.html" class="active"><span class="icon">🏠</span> Главная</a>
   <a href="progress.html"><span class="icon">📊</span> Успеваемость</a>
   <a href="payments.html"><span class="icon">💳</span> Оплата</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
   <a href="tickets.html"><span class="icon">🎫</span> Обращения</a>
   <div class="sidebar-bottom">
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a>
     <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
   </div>
 </aside>
@@ -96,6 +98,7 @@
 </div>
 
 <script src="../../js/app.js"></script>
+<script src="../../js/shop-effects.js"></script>
 <script>
   requireAuth(['parent']);
   let children = [];
@@ -109,7 +112,17 @@
     const hour = new Date().getHours();
     const greet = hour<12?'Доброе утро':hour<18?'Добрый день':'Добрый вечер';
     document.getElementById('greetingText').textContent = `${greet}, ${user.firstName}! 👋`;
-    document.getElementById('userAvatar').textContent = user.firstName?.charAt(0)||'?';
+    
+    // Дожидаемся загрузки shopEffects, чтобы аватар корректно отображался
+    if (typeof loadShopEffects === 'function' && (!window.shopEffects || !window.shopEffects.avatarItems)) {
+      try { await loadShopEffects(); } catch(e) {}
+    }
+    
+    if (typeof updateTopbarAvatar === 'function') {
+      await updateTopbarAvatar(user);
+    } else {
+      document.getElementById('userAvatar').textContent = user.firstName?.charAt(0)||'?';
+    }
 
     children = await api('/api/parent/children') || [];
 
@@ -206,7 +219,6 @@
 
   init();
 </script>
+  <script src="../../js/theme-manager.js"></script>
 </body>
 </html>
-
-

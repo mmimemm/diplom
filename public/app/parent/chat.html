@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Чаты — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    .chat-tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .chat-tab {
+      padding: 10px 24px;
+      border-radius: 30px;
+      border: 2px solid #1a1a2e;
+      background: white;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .chat-tab:hover { background: var(--bg); }
+    .chat-tab.active { background: #1a1a2e; color: white; }
+
+    .chat-info {
+      color: #666;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+
+    .chat-messages {
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 300px;
+      max-height: calc(100vh - 340px);
+      border: 2px solid #1a1a2e;
+      border-radius: 16px;
+      padding: 16px;
+      background: #fafafa;
+      margin-bottom: 12px;
+    }
+
+    .chat-message {
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .chat-message.mine {
+      background: #1a1a2e;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .chat-message.theirs {
+      background: var(--bg);
+      color: #1a1a2e;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    .chat-message .msg-header {
+      font-size: 0.75rem;
+      opacity: 0.6;
+      margin-bottom: 4px;
+    }
+    .chat-message .msg-text {
+      word-break: break-word;
+      line-height: 1.4;
+    }
+
+    .chat-form {
+      display: flex;
+      gap: 8px;
+    }
+    .chat-form input {
+      flex: 1;
+      padding: 14px 20px;
+      border-radius: 30px;
+      border: 2px solid #1a1a2e;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .chat-form input:focus { border-color: var(--accent); }
+    .chat-form button {
+      padding: 14px 28px;
+      border-radius: 30px;
+      background: #1a1a2e;
+      color: white;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: background 0.2s;
+    }
+    .chat-form button:hover { background: var(--accent); }
+
+    .chat-placeholder {
+      color: #888;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    /* Выбор ребёнка для чата с преподавателем */
+    .child-chat-selector {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .child-chat-btn {
+      padding: 10px 20px;
+      border-radius: 30px;
+      border: 2px solid var(--accent);
+      background: white;
+      color: var(--accent);
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+    .child-chat-btn:hover { background: var(--bg); }
+    .child-chat-btn.active { background: var(--accent); color: white; }
+    .child-chat-btn .child-sub {
+      font-size: 0.75rem;
+      opacity: 0.7;
+      font-weight: 400;
+    }
+    .child-chat-btn.active .child-sub { opacity: 0.8; }
+
+    @media (max-width: 768px) {
+      .chat-messages { max-height: calc(100vh - 380px); }
+      .chat-message { max-width: 85%; }
+    }
+    @media (max-width: 480px) {
+      .chat-tab { padding: 8px 16px; font-size: 0.85rem; }
+      .chat-form input { padding: 12px 16px; font-size: 0.9rem; }
+      .chat-form button { padding: 12px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'">
+    <span>IT-MANIA</span>
+  </div>
+  <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
+  <a href="progress.html"><span class="icon">📊</span> Успеваемость</a>
+  <a href="payments.html"><span class="icon">💳</span> Оплата</a>
+  <a href="chat.html" class="active"><span class="icon">💬</span> Чаты</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Обращения</a>
+  <div class="sidebar-bottom">
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a>
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle">☰</button>
+    <h1>💬 Чаты</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <button class="notif-btn">🔔 <span class="notif-badge" id="notifBadge"></span></button>
+      <div class="user-avatar" id="userAvatar">?</div>
+    </div>
+  </div>
+
+  <div class="chat-tabs">
+    <button class="chat-tab active" data-tab="teacher">
+      <span class="tab-icon">👨‍🏫</span> Преподаватель ребёнка
+    </button>
+    <button class="chat-tab" data-tab="admin">
+      <span class="tab-icon">⚙️</span> Администратор
+    </button>
+  </div>
+
+  <!-- Область чата с преподавателем -->
+  <div id="teacherChatArea">
+    <div class="chat-info" id="teacherChatInfo">Выберите ребёнка, чтобы написать его преподавателю</div>
+
+    <div class="child-chat-selector" id="childSelector"></div>
+
+    <div class="chat-messages" id="teacherMessages">
+      <div class="chat-placeholder">Загрузка...</div>
+    </div>
+
+    <form class="chat-form" id="teacherChatForm">
+      <input type="text" id="teacherMsgInput" placeholder="Введите сообщение преподавателю..." required>
+      <button type="submit">📤</button>
+    </form>
+  </div>
+
+  <!-- Область чата с администратором -->
+  <div id="adminChatArea" style="display:none;">
+    <div class="chat-info">💬 Чат с администрацией</div>
+
+    <div class="admin-contacts" id="adminContacts" style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;"></div>
+
+    <div class="chat-messages" id="adminMessages">
+      <div class="chat-placeholder">Выберите администратора для начала чата</div>
+    </div>
+
+    <form class="chat-form" id="adminChatForm" style="display:none;">
+      <input type="text" id="adminMsgInput" placeholder="Введите сообщение администратору..." required>
+      <button type="submit">📤</button>
+    </form>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+(async function() {
+  if (!requireAuth(['parent'])) return;
+
+  // ---- STATE ----
+  let activeTab = 'teacher';
+  let currentUser = null;
+  let children = [];
+  let teachers = {};          // childId -> teacher info
+  let selectedChildId = null;
+  let selectedAdminId = null;
+  let admins = [];
+  let lastTeacherMsgId = '';
+  let lastAdminMsgId = {};
+
+  // ---- DOM ----
+  const teacherMessages = document.getElementById('teacherMessages');
+  const adminMessages = document.getElementById('adminMessages');
+  const teacherChatInfo = document.getElementById('teacherChatInfo');
+  const teacherForm = document.getElementById('teacherChatForm');
+  const teacherInput = document.getElementById('teacherMsgInput');
+  const adminForm = document.getElementById('adminChatForm');
+  const adminInput = document.getElementById('adminMsgInput');
+  const tabBtns = document.querySelectorAll('.chat-tab');
+  const teacherArea = document.getElementById('teacherChatArea');
+  const adminArea = document.getElementById('adminChatArea');
+  const childSelector = document.getElementById('childSelector');
+  const adminContacts = document.getElementById('adminContacts');
+  const avatar = document.getElementById('userAvatar');
+
+  // ---- INIT ----
+  async function init() {
+    try {
+      currentUser = await api('/api/auth/me');
+      if (!currentUser) {
+        teacherMessages.innerHTML = '<div class="chat-placeholder" style="color:#c00;">Не удалось загрузить профиль</div>';
+        return;
+      }
+
+      if (typeof updateTopbarAvatar === 'function') {
+        await updateTopbarAvatar(currentUser);
+      } else if (avatar) {
+        avatar.textContent = (currentUser.firstName || '?')[0].toUpperCase();
+      }
+
+      // Загружаем детей
+      children = await api('/api/parent/children') || [];
+
+      if (!children.length) {
+        childSelector.innerHTML = '<p style="color:#888;font-size:0.9rem;">Дети не привязаны к аккаунту</p>';
+        teacherMessages.innerHTML = '<div class="chat-placeholder">Добавьте детей, чтобы писать преподавателям</div>';
+      } else {
+        // Для каждого ребёнка узнаём преподавателя
+        await loadChildrenTeachers();
+        renderChildSelector();
+        if (children.length > 0) {
+          selectChild(children[0]._id);
+        }
+      }
+
+      // Загружаем администраторов
+      await loadAdmins();
+    } catch (err) {
+      console.error('Chat init error:', err);
+      teacherMessages.innerHTML = '<div class="chat-placeholder" style="color:#c00;">Ошибка загрузки</div>';
+    }
+  }
+
+  async function loadChildrenTeachers() {
+    for (const child of children) {
+      // teacherId может быть уже подpopulated или ID
+      if (child.teacherId && typeof child.teacherId === 'object') {
+        teachers[child._id] = child.teacherId;
+      } else if (child.teacherId) {
+        // Загружаем полные данные преподавателя
+        const teacher = await api(`/api/user/${child.teacherId}`);
+        if (teacher) teachers[child._id] = teacher;
+      }
+    }
+  }
+
+  async function loadAdmins() {
+    admins = await api('/api/admins') || [];
+    if (!admins.length) {
+      adminContacts.innerHTML = '<p style="color:#888;font-size:0.9rem;">Нет доступных администраторов</p>';
+      return;
+    }
+    adminContacts.innerHTML = admins.map(a => {
+      const name = [a.firstName, a.lastName].filter(Boolean).join(' ') || 'Администратор';
+      const initial = (a.firstName || 'A')[0].toUpperCase();
+      return `<button class="child-chat-btn" data-admin-id="${a._id}" onclick="window._selectAdmin('${a._id}','${name.replace(/'/g,"\\'")}')">
+        ${initial} ${name}
+      </button>`;
+    }).join('');
+
+    // Выбираем первого
+    if (admins.length > 0) {
+      window._selectAdmin(admins[0]._id, [admins[0].firstName, admins[0].lastName].filter(Boolean).join(' ') || 'Администратор');
+    }
+  }
+
+  window._selectAdmin = function(adminId, name) {
+    selectedAdminId = adminId;
+    document.querySelectorAll('#adminContacts .child-chat-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.adminId === adminId);
+    });
+    document.getElementById('adminChatForm').style.display = 'flex';
+    lastAdminMsgId[adminId] = '';
+    loadAdminMessages();
+  };
+
+  function renderChildSelector() {
+    childSelector.innerHTML = children.map(c => {
+      const teacher = teachers[c._id];
+      const teacherName = teacher ? [teacher.firstName, teacher.lastName].filter(Boolean).join(' ') : 'Не назначен';
+      return `<button class="child-chat-btn" data-child-id="${c._id}" onclick="window._selectChild('${c._id}')">
+        ${c.firstName} ${c.lastName || ''}
+        <br><span class="child-sub">👨‍🏫 ${teacherName}</span>
+      </button>`;
+    }).join('');
+  }
+
+  window._selectChild = function(childId) {
+    selectedChildId = childId;
+    document.querySelectorAll('.child-chat-btn[data-child-id]').forEach(b => {
+      b.classList.toggle('active', b.dataset.childId === childId);
+    });
+
+    const child = children.find(c => c._id === childId);
+    const teacher = teachers[childId];
+    const childName = child ? [child.firstName, child.lastName].filter(Boolean).join(' ') : 'Ребёнок';
+    const teacherName = teacher ? [teacher.firstName, teacher.lastName].filter(Boolean).join(' ') : 'Преподаватель';
+    teacherChatInfo.textContent = `👨‍🏫 Чат с преподавателем (${childName}): ${teacherName}`;
+
+    lastTeacherMsgId = '';
+    loadTeacherMessages();
+  };
+
+  // ---- ЗАГРУЗКА СООБЩЕНИЙ: ЧАТ С ПРЕПОДАВАТЕЛЕМ ----
+  async function loadTeacherMessages() {
+    if (!selectedChildId) return;
+
+    const child = children.find(c => c._id === selectedChildId);
+    if (!child) return;
+
+    const teacherId = child.teacherId?._id || child.teacherId;
+    if (!teacherId) {
+      teacherMessages.innerHTML = '<div class="chat-placeholder">У ребёнка пока нет преподавателя</div>';
+      return;
+    }
+
+    const messages = await api(`/api/parent/teacher-chat/${selectedChildId}`) || [];
+    if (!messages.length) {
+      teacherMessages.innerHTML = '<div class="chat-placeholder">Сообщений пока нет. Напишите первое!</div>';
+      return;
+    }
+
+    if (messages.length > 0) {
+      lastTeacherMsgId = messages[messages.length - 1]._id;
+    }
+
+    renderTeacherMessages(messages);
+    scrollToBottom(teacherMessages);
+  }
+
+  function renderTeacherMessages(msgs) {
+    if (!msgs || !msgs.length) {
+      teacherMessages.innerHTML = '<div class="chat-placeholder">Сообщений пока нет. Напишите первое!</div>';
+      return;
+    }
+
+    const parentId = currentUser._id || currentUser.id;
+    teacherMessages.innerHTML = msgs.map(m => {
+      // from: 'parent' — сообщение родителя, 'teacher' — ответ преподавателя
+      const isMine = m.from === 'parent';
+      const senderName = isMine ? 'Вы' : safeText(m.userName || 'Преподаватель');
+      const cls = isMine ? 'mine' : 'theirs';
+      const time = new Date(m.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+
+      return `<div class="chat-message ${cls}">
+        <div class="msg-header">${senderName} · ${time}</div>
+        <div class="msg-text">${safeText(m.text || '')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ---- ОТПРАВКА: ЧАТ С ПРЕПОДАВАТЕЛЕМ ----
+  teacherForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const text = teacherInput.value.trim();
+    if (!text || !selectedChildId) return;
+
+    teacherInput.disabled = true;
+    try {
+      const resp = await fetch('/api/parent/teacher-chat/' + selectedChildId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify({ text })
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        showToast(err.error || 'Ошибка отправки', 'error');
+        return;
+      }
+
+      teacherInput.value = '';
+      playSound('success');
+      lastTeacherMsgId = '';
+      await loadTeacherMessages();
+    } catch (err) {
+      console.error('Send error:', err);
+      showToast('Ошибка соединения', 'error');
+    } finally {
+      teacherInput.disabled = false;
+      teacherInput.focus();
+    }
+  });
+
+  // ---- ЗАГРУЗКА СООБЩЕНИЙ: ЧАТ С АДМИНИСТРАТОРОМ ----
+  async function loadAdminMessages() {
+    if (!selectedAdminId) {
+      adminMessages.innerHTML = '<div class="chat-placeholder">Выберите администратора для начала чата</div>';
+      document.getElementById('adminChatForm').style.display = 'none';
+      return;
+    }
+
+    const messages = await api(`/api/parent/admin-chat/${selectedAdminId}`) || [];
+
+    if (!messages.length) {
+      adminMessages.innerHTML = '<div class="chat-placeholder">Сообщений пока нет. Напишите первое!</div>';
+      if (messages.length === 0) document.getElementById('adminChatForm').style.display = 'flex';
+      return;
+    }
+
+    if (messages.length > 0) {
+      lastAdminMsgId[selectedAdminId] = messages[messages.length - 1]._id;
+    }
+
+    renderAdminMessages(messages);
+    scrollToBottom(adminMessages);
+  }
+
+  function renderAdminMessages(msgs) {
+    if (!msgs || !msgs.length) {
+      adminMessages.innerHTML = '<div class="chat-placeholder">Сообщений пока нет. Напишите первое!</div>';
+      return;
+    }
+
+    const parentId = currentUser._id || currentUser.id;
+    adminMessages.innerHTML = msgs.map(m => {
+      const isMine = m.from === 'parent';
+      const senderName = isMine ? 'Вы' : safeText(m.userName || 'Администратор');
+      const cls = isMine ? 'mine' : 'theirs';
+      const time = new Date(m.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+
+      return `<div class="chat-message ${cls}">
+        <div class="msg-header">${senderName} · ${time}</div>
+        <div class="msg-text">${safeText(m.text || '')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ---- ОТПРАВКА: ЧАТ С АДМИНИСТРАТОРОМ ----
+  adminForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const text = adminInput.value.trim();
+    if (!text || !selectedAdminId) return;
+
+    adminInput.disabled = true;
+    try {
+      const resp = await fetch('/api/parent/admin-chat/' + selectedAdminId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify({ text })
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        showToast(err.error || 'Ошибка отправки', 'error');
+        return;
+      }
+
+      adminInput.value = '';
+      playSound('success');
+      lastAdminMsgId[selectedAdminId] = '';
+      await loadAdminMessages();
+    } catch (err) {
+      console.error('Send error:', err);
+      showToast('Ошибка соединения', 'error');
+    } finally {
+      adminInput.disabled = false;
+      adminInput.focus();
+    }
+  });
+
+  // ---- ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ----
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const tab = this.dataset.tab;
+      if (tab === activeTab) return;
+      activeTab = tab;
+      tabBtns.forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+
+      teacherArea.style.display = tab === 'teacher' ? 'block' : 'none';
+      adminArea.style.display = tab === 'admin' ? 'block' : 'none';
+      playSound('swipe');
+    });
+  });
+
+  // ---- AUTO-REFRESH ----
+  setInterval(() => {
+    if (activeTab === 'teacher' && selectedChildId) {
+      const child = children.find(c => c._id === selectedChildId);
+      if (child && (child.teacherId?._id || child.teacherId)) {
+        loadTeacherMessagesSilent();
+      }
+    }
+    if (activeTab === 'admin' && selectedAdminId) {
+      loadAdminMessagesSilent();
+    }
+  }, 5000);
+
+  async function loadTeacherMessagesSilent() {
+    if (!selectedChildId) return;
+    const child = children.find(c => c._id === selectedChildId);
+    if (!child) return;
+    const teacherId = child.teacherId?._id || child.teacherId;
+    if (!teacherId) return;
+
+    const messages = await api(`/api/parent/teacher-chat/${selectedChildId}`) || [];
+    if (!messages.length) return;
+
+    const lastId = lastTeacherMsgId;
+    let lastIdx = -1;
+    if (lastId) lastIdx = messages.findIndex(m => m._id === lastId);
+
+    const newMsgs = lastIdx >= 0 ? messages.slice(lastIdx + 1) : messages;
+    if (newMsgs.length === 0 && lastId) return;
+
+    // Если нет lastId — это первый раз, ничего не делаем
+    if (lastIdx < 0 && lastId) {
+      renderTeacherMessages(messages);
+    } else if (newMsgs.length > 0) {
+      // Убираем плейсхолдер
+      const placeholder = teacherMessages.querySelector('.chat-placeholder');
+      if (placeholder) placeholder.remove();
+
+      appendMessages(teacherMessages, newMsgs, currentUser._id || currentUser.id, 'parent');
+    }
+
+    if (messages.length > 0) {
+      lastTeacherMsgId = messages[messages.length - 1]._id;
+    }
+    scrollToBottom(teacherMessages);
+  }
+
+  async function loadAdminMessagesSilent() {
+    if (!selectedAdminId) return;
+    const messages = await api(`/api/parent/admin-chat/${selectedAdminId}`) || [];
+    if (!messages.length) return;
+
+    const lastId = lastAdminMsgId[selectedAdminId] || '';
+    let lastIdx = -1;
+    if (lastId) lastIdx = messages.findIndex(m => m._id === lastId);
+
+    const newMsgs = lastIdx >= 0 ? messages.slice(lastIdx + 1) : messages;
+    if (newMsgs.length === 0 && lastId) return;
+
+    if (lastIdx < 0 && lastId) {
+      renderAdminMessages(messages);
+    } else if (newMsgs.length > 0) {
+      const placeholder = adminMessages.querySelector('.chat-placeholder');
+      if (placeholder) placeholder.remove();
+      appendMessages(adminMessages, newMsgs, currentUser._id || currentUser.id, 'parent');
+    }
+
+    if (messages.length > 0) {
+      lastAdminMsgId[selectedAdminId] = messages[messages.length - 1]._id;
+    }
+    scrollToBottom(adminMessages);
+  }
+
+  function appendMessages(container, msgs, ownId, ownFrom) {
+    msgs.forEach(m => {
+      const isMine = m.from === ownFrom;
+      const senderName = isMine ? 'Вы' : safeText(m.userName || '?');
+      const cls = isMine ? 'mine' : 'theirs';
+      const time = new Date(m.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+
+      const div = document.createElement('div');
+      div.className = `chat-message ${cls}`;
+      div.innerHTML = `<div class="msg-header">${senderName} · ${time}</div><div class="msg-text">${safeText(m.text || '')}</div>`;
+      container.appendChild(div);
+    });
+  }
+
+  function safeText(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function scrollToBottom(el) {
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // ---- START ----
+  await init();
+})();
+</script>
+
+  <script src="../../js/theme-manager.js"></script>
+</body>
+</html>

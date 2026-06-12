@@ -60,8 +60,31 @@ const shopItemSchema = new mongoose.Schema({
   description: String,
   icon: String,
   price: Number,  // в билетиках
-  type: { type: String, enum: ['avatar', 'editor_skin', 'pin_project'] },
+  type: { type: String, enum: ['avatar', 'editor_skin', 'pin_project', 'boost'] },
+  css: String,
+  effect: String,
+  duration: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true }
+});
+
+// Чат ученик-преподаватель
+const chatMessageSchema = new mongoose.Schema({
+  studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  teacherId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  from: { type: String, enum: ['student', 'teacher', 'parent', 'admin'], required: true },
+  userName: { type: String, default: '' },
+  text: String,
+  createdAt: { type: Date, default: Date.now }
+});
+
+// Групповой чат (сообщения внутри группы)
+const groupMessageSchema = new mongoose.Schema({
+  groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userName: String,
+  userRole: String,
+  text: String,
+  createdAt: { type: Date, default: Date.now }
 });
 
 // Покупка в магазине
@@ -71,6 +94,15 @@ const purchaseSchema = new mongoose.Schema({
   purchasedAt: { type: Date, default: Date.now }
 });
 
+// Подписка на курс (оплата)
+const subscriptionSchema = new mongoose.Schema({
+  studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
+  paidUntil: { type: Date, required: true }, // дата окончания оплаты
+  isActive: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
 module.exports = {
   Application: mongoose.model('Application', applicationSchema),
   Payment: mongoose.model('Payment', paymentSchema),
@@ -78,5 +110,8 @@ module.exports = {
   Ticket: mongoose.model('Ticket', ticketSchema),
   Notification: mongoose.model('Notification', notificationSchema),
   ShopItem: mongoose.model('ShopItem', shopItemSchema),
-  Purchase: mongoose.model('Purchase', purchaseSchema)
+  Purchase: mongoose.model('Purchase', purchaseSchema),
+  ChatMessage: mongoose.model('ChatMessage', chatMessageSchema),
+  GroupMessage: mongoose.model('GroupMessage', groupMessageSchema),
+  Subscription: mongoose.model('Subscription', subscriptionSchema)
 };

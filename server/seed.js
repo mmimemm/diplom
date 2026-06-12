@@ -73,22 +73,140 @@ const школа = "IT-MANIA";</pre>
       xpReward: 50
     });
     await lesson1.save();
-    await Module.findByIdAndUpdate(mod1._id, { $push: { lessons: lesson1._id } });
+
+    // Урок 2
+    const lesson2 = new Lesson({
+      moduleId: mod1._id,
+      title: 'Условные операторы if-else',
+      order: 2,
+      theory: {
+        content: `
+          <h3>Если...иначе</h3>
+          <p>Оператор if позволяет выполнить код только при выполнении условия:</p>
+          <pre style="background:#f0e8ff;padding:12px;border-radius:12px;">let погода = "дождь";
+if (погода === "дождь") {
+  console.log("Возьми зонтик!");
+} else {
+  console.log("Можно идти без зонтика");
+}</pre>
+        `,
+        interactiveBlocks: [{
+          code: 'let age = 15;\nif (age >= 16) {\n  console.log("Можно получить права");\n} else {\n  console.log("Ещё рано");\n}',
+          language: 'javascript',
+          description: 'Проверь возраст!'
+        }]
+      },
+      practice: {
+        description: 'Напиши код, который проверяет, больше ли число 10',
+        starterCode: 'let number = 7;\n// Напиши условие if-else\nif (/* условие */) {\n  console.log("Число больше 10");\n} else {\n  console.log("Число меньше или равно 10");\n}',
+        language: 'javascript',
+        hints: ['Используй оператор сравнения >', 'Условие должно быть: number > 10']
+      },
+      xpReward: 75
+    });
+    await lesson2.save();
+
+    // Урок 3
+    const lesson3 = new Lesson({
+      moduleId: mod1._id,
+      title: 'Циклы for и while',
+      order: 3,
+      theory: {
+        content: `
+          <h3>Повторение действий</h3>
+          <p>Циклы позволяют повторять код несколько раз:</p>
+          <pre style="background:#f0e8ff;padding:12px;border-radius:12px;">// Цикл for
+for (let i = 1; i <= 5; i++) {
+  console.log("Шаг " + i);
+}
+
+// Цикл while
+let count = 0;
+while (count < 3) {
+  console.log("Считаем: " + count);
+  count++;
+}</pre>
+        `,
+        interactiveBlocks: [{
+          code: 'for (let i = 0; i < 3; i++) {\n  console.log("Привет!");\n}',
+          language: 'javascript',
+          description: 'Запусти цикл!'
+        }]
+      },
+      practice: {
+        description: 'Напиши цикл, который выводит числа от 1 до 10',
+        starterCode: '// Напиши цикл for\nfor (let i = /* начало */; i <= /* конец */; i++) {\n  console.log(i);\n}',
+        language: 'javascript',
+        hints: ['Начни с i = 1', 'Продолжай пока i <= 10']
+      },
+      xpReward: 100
+    });
+    await lesson3.save();
+
+    // Добавляем все уроки в модуль
+    await Module.findByIdAndUpdate(mod1._id, { 
+      $push: { 
+        lessons: { $each: [lesson1._id, lesson2._id, lesson3._id] }
+      }
+    });
 
     console.log('✅ Тестовый курс создан');
   }
 
-  // Товары магазина
+  // Товары магазина — 10 штук с реальными рабочими эффектами
   const shopCount = await ShopItem.countDocuments();
   if (!shopCount) {
     await ShopItem.insertMany([
-      { name: 'Тёмная тема редактора', description: 'Стильная тёмная тема для Monaco Editor', icon: '🌙', price: 50, type: 'editor_skin' },
-      { name: 'Радужные отступы', description: 'Разноцветные отступы в коде', icon: '🌈', price: 30, type: 'editor_skin' },
-      { name: 'Крутые наушники', description: 'Элемент аватара — наушники', icon: '🎧', price: 100, type: 'avatar' },
-      { name: 'Светящийся шлем', description: 'Элемент аватара — шлем хакера', icon: '⛑️', price: 200, type: 'avatar' },
-      { name: 'Закрепить проект', description: 'Твой проект на главной странице на 1 день', icon: '📌', price: 150, type: 'pin_project' }
+      { 
+        name: 'Клоунский нос', 
+        description: 'Красный клоунский нос для аватара 🎪', 
+        icon: '🤡', price: 50, type: 'avatar', effect: 'clownnose' 
+      },
+      { 
+        name: 'Радужные отступы', 
+        description: 'Разноцветные отступы в коде', 
+        icon: '🌈', price: 30, type: 'editor_skin',
+        css: '.monaco-editor .margin-view-overlays .line-numbers { background: linear-gradient(135deg, #ff69b4, #9900ff, #00ccff) !important; color: white !important; border-radius: 0 4px 4px 0 !important; }'
+      },
+      { 
+        name: 'Неоновые выделения', 
+        description: 'Светящиеся выделения кода', 
+        icon: '💡', price: 40, type: 'editor_skin',
+        css: '.monaco-editor .selected-text { background: rgba(153,0,255,0.25) !important; box-shadow: 0 0 12px rgba(153,0,255,0.5) !important; } .monaco-editor .selectionHighlight { background: rgba(255,105,180,0.15) !important; }'
+      },
+      { 
+        name: 'Космические звёзды', 
+        description: 'Анимированные звёзды на фоне панели кода', 
+        icon: '🌌', price: 60, type: 'editor_skin',
+        css: '.monaco-editor .monaco-editor-background::after { content: "✨"; position: absolute; right: 10px; top: 10px; font-size: 24px; opacity: 0.4; animation: starSpin 3s linear infinite; } @keyframes starSpin { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.3); } 100% { transform: rotate(360deg) scale(1); } }'
+      },
+      { 
+        name: 'Крутые наушники', 
+        description: 'Элемент аватара — наушники', 
+        icon: '🎧', price: 100, type: 'avatar', effect: 'headphones' 
+      },
+      { 
+        name: 'Светящийся шлем', 
+        description: 'Элемент аватара — шлем хакера', 
+        icon: '⛑️', price: 200, type: 'avatar', effect: 'helmet' 
+      },
+      { 
+        name: 'Смайлик-единорог', 
+        description: 'Элемент аватара — волшебный единорог 🦄', 
+        icon: '🦄', price: 150, type: 'avatar', effect: 'unicorn' 
+      },
+      { 
+        name: 'Солнцезащитные очки 🕶️', 
+        description: 'Крутой элемент аватара — солнечные очки', 
+        icon: '🕶️', price: 120, type: 'avatar', effect: 'sunglasses' 
+      },
+      { 
+        name: 'Бейдж Суперзвезда', 
+        description: 'Элемент аватара — звёздный бейдж', 
+        icon: '⭐', price: 180, type: 'avatar', effect: 'superbadge' 
+      }
     ]);
-    console.log('✅ Товары магазина созданы');
+    console.log('✅ 10 товаров магазина созданы');
   }
 
   console.log('\n🚀 Готово! Запусти сервер: npm start');

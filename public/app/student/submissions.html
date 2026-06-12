@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Выполненные задания — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <style>
+    .submission-card {
+      background: white;
+      border-radius: 20px;
+      padding: 20px 24px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      transition: 0.3s;
+      cursor: pointer;
+    }
+    .submission-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); transform: translateY(-2px); }
+    .submission-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .submission-title {
+      font-weight: 800;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .submission-meta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    .submission-meta span { display: flex; align-items: center; gap: 4px; }
+    .status-badge {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-passed { background: #d4edda; color: #155724; }
+    .status-failed { background: #f8d7da; color: #721c24; }
+    .status-checked { background: #cce5ff; color: #004085; }
+
+    .teacher-response-box {
+      background: #f0e8ff;
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-top: 14px;
+      border-left: 4px solid var(--accent);
+      display: none;
+    }
+    .teacher-response-box.show { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .teacher-response-box .tr-header {
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: var(--accent);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .teacher-response-box .tr-text {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--text-dark);
+    }
+    .teacher-response-box .tr-meta {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 8px;
+    }
+    .code-comments {
+      margin-top: 12px;
+    }
+    .code-comment-item {
+      display: flex;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 0.85rem;
+    }
+    .code-comment-item .cc-user {
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .code-comment-item .cc-line {
+      color: #888;
+      font-size: 0.75rem;
+    }
+    .submission-code {
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 14px 18px;
+      color: #d4d4d4;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 10px;
+      display: none;
+    }
+    .submission-code.show { display: block; }
+    .expand-btn {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-tab {
+      padding: 8px 20px;
+      border-radius: 24px;
+      border: 2px solid #eee;
+      background: none;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: 0.3s;
+    }
+    .filter-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .filter-tab .count { background: rgba(0,0,0,0.1); border-radius: 12px; padding: 2px 8px; font-size: 0.75rem; margin-left: 4px; }
+    .filter-tab.active .count { background: rgba(255,255,255,0.2); }
+
+    .score-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 0.9rem;
+    }
+    .score-high { background: #d4edda; color: #155724; }
+    .score-mid { background: #fff3cd; color: #856404; }
+    .score-low { background: #f8d7da; color: #721c24; }
+
+    @media (max-width: 768px) {
+      .submission-header { flex-direction: column; gap: 8px; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'">
+    <span>IT-MANIA</span>
+  </div>
+  <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
+  <a href="lessons.html" ><span class="icon">📚</span> Мои уроки</a>
+  <a href="progress-map.html"><span class="icon">🗺️</span> Карта прогресса</a>
+  <a href="submissions.html" class="active"><span class="icon">📋</span> Задания</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
+  <a href="sandbox.html"><span class="icon">🧪</span> Песочница</a>
+  <a href="shop.html"><span class="icon">🎪</span> Магазин</a>
+  <a href="leaderboard.html"><span class="icon">🏆</span> Рейтинг</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Обращения</a>
+  <div class="sidebar-bottom">
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a>
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+
+<main class="main-content" style="padding:16px;">
+  <div class="topbar" style="margin-bottom:16px;">
+    <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
+    <h1>📋 Выполненные задания</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <div class="user-avatar" id="userAvatar" onclick="location.href='profile.html'" title="Профиль">?</div>
+    </div>
+  </div>
+
+  <!-- Фильтры -->
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="filterSubs('all', this)">Все<span class="count" id="countAll">0</span></button>
+    <button class="filter-tab" onclick="filterSubs('passed', this)">✅ Сдано<span class="count" id="countPassed">0</span></button>
+    <button class="filter-tab" onclick="filterSubs('pending', this)">⏳ На проверке<span class="count" id="countPending">0</span></button>
+    <button class="filter-tab" onclick="filterSubs('failed', this)">❌ Не сдано<span class="count" id="countFailed">0</span></button>
+  </div>
+
+  <!-- Статистика -->
+  <div class="stats-grid" style="margin-bottom:20px;">
+    <div class="stat-card">
+      <div class="stat-icon">📤</div>
+      <div class="stat-info"><h3 id="statTotal">0</h3><p>Всего сдано</p></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-info"><h3 id="statPassed">0</h3><p>Зачтено</p></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🎫</div>
+      <div class="stat-info"><h3 id="statTicketsEarned">0</h3><p>Билетиков</p></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⭐</div>
+      <div class="stat-info"><h3 id="statAvgScore">-</h3><p>Средний балл</p></div>
+    </div>
+  </div>
+
+  <!-- Список -->
+  <div id="submissionsList">
+    <p style="text-align:center;color:#888;padding:40px;">Загрузка...</p>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+  requireAuth(['student']);
+  let allSubmissions = [];
+  let currentFilter = 'all';
+
+  async function init() {
+    const user = await api('/api/auth/me');
+    if (!user) return;
+    if (typeof updateTopbarAvatar === 'function') {
+      await updateTopbarAvatar(user);
+    } else {
+      document.getElementById('userAvatar').textContent = user.firstName?.charAt(0).toUpperCase() || '?';
+    }
+    await loadSubmissions();
+  }
+
+  async function loadSubmissions() {
+    const subs = await api('/api/my-submissions') || [];
+    allSubmissions = subs;
+
+    // Статистика
+    const passed = subs.filter(s => s.status === 'passed');
+    const checked = subs.filter(s => s.status === 'checked' || s.status === 'passed' || s.status === 'failed');
+    const totalTickets = subs.reduce((sum, s) => sum + (s.tickets || 0), 0);
+    const scores = checked.filter(s => s.score > 0).map(s => s.score);
+    const avgScore = scores.length ? Math.round(scores.reduce((a,b) => a+b, 0) / scores.length) : '-';
+
+    document.getElementById('statTotal').textContent = subs.length;
+    document.getElementById('statPassed').textContent = passed.length;
+    document.getElementById('statTicketsEarned').textContent = totalTickets;
+    document.getElementById('statAvgScore').textContent = avgScore !== '-' ? `${avgScore}%` : '-';
+
+    document.getElementById('countAll').textContent = subs.length;
+    document.getElementById('countPassed').textContent = subs.filter(s => s.status === 'passed').length;
+    document.getElementById('countPending').textContent = subs.filter(s => s.status === 'pending').length;
+    document.getElementById('countFailed').textContent = subs.filter(s => s.status === 'failed').length;
+
+    renderFiltered();
+  }
+
+  function filterSubs(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderFiltered();
+    playSound('click');
+  }
+
+  function renderFiltered() {
+    let filtered = allSubmissions;
+    if (currentFilter !== 'all') {
+      filtered = allSubmissions.filter(s => s.status === currentFilter);
+    }
+
+    if (!filtered.length) {
+      document.getElementById('submissionsList').innerHTML = `
+        <div class="content-card" style="text-align:center;padding:40px;">
+          <div style="font-size:3rem;margin-bottom:12px;">📭</div>
+          <p style="color:#888;font-weight:600;">
+            ${currentFilter === 'all' ? 'Вы ещё не отправляли задания на проверку' :
+              currentFilter === 'passed' ? 'Нет зачтённых заданий. Продолжайте стараться!' :
+              currentFilter === 'pending' ? 'Нет заданий на проверке. Всё проверено!' :
+              'Нет несданных заданий. Отлично!'}
+          </p>
+          <a href="lessons.html" class="btn-accent" style="display:inline-block;margin-top:16px;text-decoration:none;padding:10px 24px;border-radius:20px;font-size:0.9rem;">Перейти к урокам →</a>
+        </div>`;
+      return;
+    }
+
+    document.getElementById('submissionsList').innerHTML = filtered.map(s => renderSubmission(s)).join('');
+  }
+
+  function renderSubmission(s) {
+    const statusLabels = { pending: 'На проверке', passed: 'Зачтено', failed: 'Не сдано', checked: 'Проверено' };
+    const statusIcons = { pending: '⏳', passed: '✅', failed: '❌', checked: '👀' };
+    const statusClass = `status-${s.status}`;
+    const lessonTitle = s.lessonId?.title || 'Без названия';
+    const attempt = s.attempt || 1;
+
+    let scoreHTML = '';
+    if (s.status === 'passed' || s.status === 'failed' || s.status === 'checked') {
+      const scoreClass = (s.score >= 70) ? 'score-high' : (s.score >= 40) ? 'score-mid' : 'score-low';
+      scoreHTML = `<div class="score-circle ${scoreClass}">${s.score || 0}%</div>`;
+    }
+
+    const hasResponse = s.teacherComment || (s.comments && s.comments.length > 0);
+    const subId = s._id;
+
+    return `
+      <div class="submission-card" id="sub-${subId}">
+        <div class="submission-header">
+          <div class="submission-title">
+            ${statusIcons[s.status] || '📝'} ${lessonTitle}
+            <span class="status-badge ${statusClass}">${statusLabels[s.status] || s.status}</span>
+          </div>
+          ${scoreHTML}
+        </div>
+
+        <div class="submission-meta">
+          <span>📅 ${new Date(s.submittedAt).toLocaleDateString('ru', { day:'numeric', month:'long', year:'numeric' })}</span>
+          <span>🔄 Попытка ${attempt}</span>
+          ${s.tickets ? `<span>🎫 +${s.tickets} билетиков</span>` : ''}
+          ${s.checkedAt ? `<span>✔ Проверено: ${new Date(s.checkedAt).toLocaleDateString('ru', { day:'numeric', month:'long' })}</span>` : ''}
+        </div>
+
+        ${s.code ? `
+          <button class="expand-btn" onclick="toggleCode('${subId}')">📝 Показать код ▾</button>
+          <div class="submission-code" id="code-${subId}">${escapeHTML(s.code)}</div>
+        ` : ''}
+
+        ${hasResponse ? `
+          <button class="expand-btn" onclick="toggleTeacherResponse('${subId}')">
+            👨‍🏫 Ответ преподавателя ▾
+          </button>
+          <div class="teacher-response-box" id="response-${subId}">
+            <div class="tr-header">👨‍🏫 Комментарий преподавателя</div>
+            ${s.teacherComment ? `<div class="tr-text">${escapeHTML(s.teacherComment)}</div>` : '<div class="tr-text" style="color:#888;">Комментарий отсутствует</div>'}
+            ${s.comments?.length ? `
+              <div class="code-comments" style="margin-top:12px;">
+                <div style="font-weight:700;font-size:0.85rem;margin-bottom:6px;">💬 Обсуждение кода:</div>
+                ${s.comments.map(c => `
+                  <div class="code-comment-item">
+                    <div class="cc-user">${c.userId?.firstName || 'Пользователь'} ${c.userId?.lastName || ''}</div>
+                    <div class="cc-line">${c.line ? `стр. ${c.line}` : ''}</div>
+                    <div style="flex:1;">${escapeHTML(c.text)}</div>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+            <div class="tr-meta">
+              ${s.checkedAt ? `Проверено: ${new Date(s.checkedAt).toLocaleDateString('ru', { day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })}` : ''}
+              · Оценка: ${s.score || 0}% · Билетики: ${s.tickets || 0} 🎫
+            </div>
+          </div>
+        ` : (s.status === 'pending' ? `
+          <div style="margin-top:10px;color:#888;font-size:0.85rem;display:flex;align-items:center;gap:6px;">
+            ⏳ Ожидает проверки преподавателем...
+          </div>
+        ` : '')}
+      </div>`;
+  }
+
+  function toggleCode(subId) {
+    const el = document.getElementById(`code-${subId}`);
+    if (!el) return;
+    el.classList.toggle('show');
+    const btn = el.previousElementSibling;
+    if (btn && btn.classList.contains('expand-btn')) {
+      btn.textContent = el.classList.contains('show') ? '📝 Скрыть код ▴' : '📝 Показать код ▾';
+    }
+    playSound('click');
+  }
+
+  function toggleTeacherResponse(subId) {
+    const el = document.getElementById(`response-${subId}`);
+    if (!el) return;
+    el.classList.toggle('show');
+    const btn = el.previousElementSibling;
+    if (btn && btn.classList.contains('expand-btn')) {
+      btn.textContent = el.classList.contains('show') ? '👨‍🏫 Скрыть ответ ▴' : '👨‍🏫 Ответ преподавателя ▾';
+    }
+    playSound('click');
+  }
+
+  function escapeHTML(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  init();
+</script>
+  <script src="../../js/theme-manager.js"></script>
+</body>
+</html>

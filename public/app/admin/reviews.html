@@ -17,9 +17,11 @@
   <a href="courses.html"><span class="icon">📚</span> Курсы</a>
   <a href="payments.html"><span class="icon">💳</span> Оплаты</a>
   <a href="reviews.html" class="active"><span class="icon">⭐</span> Отзывы</a>
-  <a href="tickets.html"><span class="icon">🎫</span> Тикеты</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Билетики</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
+  <a href="shop-admin.html"><span class="icon">🎪</span> Магазин</a>
   <div class="sidebar-bottom">
-    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a><a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
   </div>
 </aside>
 
@@ -30,7 +32,7 @@
     <div class="topbar-right">
       <button class="sound-btn" id="soundBtn">🔊</button>
       <button class="notif-btn" onclick="toggleNotificationsPanel()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
-      <div class="user-avatar">A</div>
+      <div class="user-avatar" id="userAvatar">A</div>
     </div>
   </div>
 
@@ -67,7 +69,11 @@
 <script>
   requireAuth(['admin']);
 
-  async function init() {
+  async async function init() {
+    const me = await api("/api/auth/me");
+    if (me && typeof updateTopbarAvatar === "function") {
+      await updateTopbarAvatar(me);
+    }
     const all = await api('/api/admin/reviews') || [];
     const pending = all.filter(r => !r.isApproved);
     const approved = all.filter(r => r.isApproved);
@@ -119,5 +125,6 @@
 
   init();
 </script>
+  <script src="../../js/theme-manager.js"></script>
 </body>
 </html>

@@ -46,9 +46,9 @@ router.patch('/me', require('../middleware/auth').auth, async (req, res) => {
       update.avatarConfig = req.body.avatarConfig;
     }
     if (req.body.soundEnabled !== undefined) update.soundEnabled = req.body.soundEnabled;
-    if (req.body.theme)  update.theme  = req.body.theme;
-    if (req.body.email)  update.email  = req.body.email;
-    if (req.body.phone)  update.phone  = req.body.phone;
+    if (req.body.theme) update.theme = req.body.theme;
+    if (req.body.email) update.email = req.body.email;
+    if (req.body.phone) update.phone = req.body.phone;
     const user = await User.findByIdAndUpdate(req.user.id, update, { new: true }).select('-password');
     res.json(user);
   } catch (e) {

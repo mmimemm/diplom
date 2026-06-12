@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
@@ -9,14 +9,118 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
   <style>
-    .sandbox-layout { display:grid; grid-template-columns:1fr 1fr; gap:16px; height:calc(100vh - 140px); }
-    .editor-panel { display:flex; flex-direction:column; }
-    .preview-panel { background:#fff; border-radius:20px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.06); }
-    .preview-panel iframe { width:100%; height:100%; border:none; }
-    .lang-tabs { display:flex; gap:6px; margin-bottom:10px; }
-    .lang-tab { padding:6px 16px; border-radius:20px; border:2px solid #eee; background:none; font-weight:700; cursor:pointer; font-family:inherit; font-size:0.85rem; transition:0.3s; }
-    .lang-tab.active { background:var(--accent); color:white; border-color:var(--accent); }
-    #monacoSandbox { flex:1; border-radius:0 0 16px 16px; overflow:hidden; }
+    .sandbox-layout { display:grid; grid-template-columns:1fr 1fr; gap:12px; height:calc(100vh - 210px); position:relative; }
+    .editor-panel { display:flex; flex-direction:column; background:#1e1e1e; border-radius:16px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.1); position:relative; z-index:1; }
+    .editor-header { background:#2d2d2d; padding:8px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #3d3d3d; }
+    .editor-header .dot-row { display:flex; gap:6px; }
+    .editor-header .dot { width:10px; height:10px; border-radius:50%; }
+    .dot-red { background:#ff5f57; } .dot-yellow { background:#febc2e; } .dot-green { background:#28c840; }
+    .preview-panel { background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.06); display:flex; flex-direction:column; position:relative; z-index:1; }
+    .preview-header { background:#f5f5f5; padding:8px 16px; font-size:0.85rem; font-weight:600; color:#666; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
+    .preview-panel iframe { width:100%; flex:1; border:none; background:white; }
+    .lang-tabs { display:flex; gap:4px; margin-bottom:10px; flex-wrap:wrap; }
+    .lang-tab { padding:7px 16px; border-radius:20px; border:2px solid transparent; background:rgba(153,0,255,0.08); color:var(--accent); font-weight:700; cursor:pointer; font-family:inherit; font-size:0.82rem; transition:0.25s; white-space:nowrap; }
+    .lang-tab:hover { background:rgba(153,0,255,0.18); }
+    .lang-tab.active { background:var(--accent); color:white; border-color:var(--accent); box-shadow:0 2px 10px rgba(153,0,255,0.3); }
+    .lang-tab .lang-icon { margin-right:4px; }
+    #monacoSandbox { flex:1; }
+    .tool-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:6px; }
+    .btn-sm { padding:7px 14px; border-radius:20px; border:none; font-weight:700; cursor:pointer; font-family:inherit; font-size:0.82rem; transition:0.25s; display:inline-flex; align-items:center; gap:5px; }
+    .btn-sm:hover { transform:translateY(-1px); }
+    .btn-run { background:var(--accent); color:white; box-shadow:0 2px 10px rgba(153,0,255,0.25); }
+    .btn-run:hover { box-shadow:0 4px 16px rgba(153,0,255,0.4); }
+    .btn-save { background:#00aa44; color:white; }
+    .btn-clear { background:#f5f5f5; color:#666; }
+    .btn-load { background:#f0e8ff; color:var(--accent); }
+    .btn-template { background:#fff3e0; color:#e65100; }
+    .btn-format { background:#e8f5e9; color:#2e7d32; }
+    .console-out { background:#0d0d0d; color:#4ec9b0; font-family:'Fira Code', 'Consolas', monospace; font-size:0.8rem; padding:10px 16px; overflow-y:auto; min-height:50px; max-height:180px; border-top:2px solid #2d2d2d; transition:background 0.4s, color 0.4s, border-color 0.4s; }
+    .console-out .error-line { color:#f44747; }
+    .console-out .info-line { color:#569cd6; }
+    .console-out .warn-line { color:#dcdcaa; }
+    .console-out .success-line { color:#4ec9b0; }
+    /* Тёмная тема для панели превью/консоли */
+    [data-theme="dark"] .preview-panel { background:#2d2d4e; }
+    [data-theme="dark"] .preview-header { background:#252545; color:#ccc; border-bottom-color:#444466; }
+    [data-theme="dark"] .preview-panel iframe { background:#1a1a2e; }
+    [data-theme="dark"] .console-out { background:#1a1a2e; color:#4ec9b0; border-top-color:#444466; }
+    [data-theme="dark"] .empty-state { color:#666; }
+    [data-theme="dark"] .save-popup { background:var(--card-bg); color:var(--white); }
+    [data-theme="dark"] .save-popup input { background:var(--input-bg); border-color:var(--input-border); color:var(--white); }
+    [data-theme="dark"] .template-card { background:var(--card-bg); border-color:#555577; color:var(--white); }
+    [data-theme="dark"] .template-card:hover { border-color:var(--accent); background:#3d3d5e; }
+    [data-theme="dark"] .saved-project-item { background:#3d3d5e; }
+    [data-theme="dark"] .saved-project-item:hover { border-color:var(--accent); background:#4d4d6e; }
+    [data-theme="dark"] .saved-project-item .sp-meta { color:#aaa; }
+    [data-theme="dark"] .btn-clear { background:#3d3d5e; color:#ccc; }
+    [data-theme="dark"] .btn-load { background:rgba(153,0,255,0.15); color:var(--accent-light); }
+    [data-theme="dark"] .btn-template { background:rgba(230,81,0,0.15); color:#ffaa44; }
+    [data-theme="dark"] .btn-format { background:rgba(46,125,50,0.15); color:#66bb6a; }
+    [data-theme="dark"] .preview-mode-btn { background:#3d3d5e; border-color:#555577; color:#ccc; }
+    [data-theme="dark"] .preview-mode-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
+    [data-theme="dark"] .status-bar { background:#1a3377; }
+    [data-theme="dark"] .editor-panel { box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+    .saved-projects { margin-top:12px; }
+    .saved-project-item {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:10px 16px; border-radius:14px; background:#fafafa; margin-bottom:6px;
+      cursor:pointer; transition:0.2s; border:2px solid transparent;
+    }
+    .saved-project-item:hover { border-color:var(--accent); background:#f0e8ff; transform:translateX(2px); }
+    .saved-project-item .sp-name { font-weight:700; font-size:0.85rem; }
+    .saved-project-item .sp-meta { font-size:0.75rem; color:#888; display:flex; gap:10px; }
+    .saved-project-item .sp-actions { display:flex; gap:4px; }
+    .toggle-saved { background:none; border:none; color:var(--accent); font-weight:700; cursor:pointer; font-family:inherit; font-size:0.85rem; margin-top:4px; }
+    .save-popup {
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+      background:white; border-radius:24px; padding:28px; z-index:1000; box-shadow:0 8px 40px rgba(0,0,0,0.2);
+      display:none; min-width:340px;
+    }
+    .save-popup.show { display:block; animation:popIn 0.3s ease; }
+    @keyframes popIn { from { opacity:0; transform:translate(-50%,-50%) scale(0.9); } to { opacity:1; transform:translate(-50%,-50%) scale(1); } }
+    .save-popup input { width:100%; border:2px solid #eee; border-radius:16px; padding:10px 16px; font-family:inherit; font-size:0.9rem; outline:none; margin:12px 0; box-sizing:border-box; }
+    .save-popup input:focus { border-color:var(--accent); }
+    .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:999; display:none; }
+    .overlay.show { display:block; }
+    .template-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+    .template-card {
+      padding:12px 14px; border-radius:14px; border:2px solid #eee; cursor:pointer;
+      transition:0.25s; background:white; text-align:left; font-family:inherit;
+    }
+    .template-card:hover { border-color:var(--accent); background:#f0e8ff; transform:translateY(-2px); }
+    .template-card .tc-icon { font-size:1.4rem; margin-bottom:4px; }
+    .template-card .tc-name { font-weight:700; font-size:0.85rem; }
+    .template-card .tc-desc { font-size:0.75rem; color:#888; }
+    .preview-toggle-row { display:flex; gap:6px; }
+    .preview-mode-btn { padding:4px 12px; border-radius:14px; border:1.5px solid #ddd; background:white; font-size:0.75rem; font-weight:700; cursor:pointer; font-family:inherit; transition:0.2s; }
+    .preview-mode-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
+    .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#ccc; gap:8px; }
+    .empty-state .es-icon { font-size:3rem; }
+    .empty-state .es-text { font-size:0.9rem; }
+    .status-bar { display:flex; align-items:center; gap:8px; padding:0 16px; height:28px; background:#007acc; color:white; font-size:0.72rem; font-family:'Fira Code', monospace; }
+    .status-bar span { opacity:0.9; }
+    .status-bar .status-right { margin-left:auto; }
+    .delete-btn { background:#ff4757; color:white; border:none; border-radius:8px; padding:3px 10px; cursor:pointer; font-size:0.72rem; font-weight:700; transition:0.2s; }
+    .delete-btn:hover { background:#e0394a; transform:scale(1.05); }
+    #starsCanvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+    }
+    @media (max-width:768px) {
+      .sandbox-layout { grid-template-columns:1fr; height:auto; }
+      .editor-panel { min-height:300px; }
+      .preview-panel { height:300px; }
+      .template-grid { grid-template-columns:1fr; }
+    }
+    @media (max-width:480px) {
+      .lang-tabs { gap:2px; }
+      .lang-tab { padding:5px 10px; font-size:0.72rem; }
+      .btn-sm { padding:6px 10px; font-size:0.72rem; }
+    }
   </style>
 </head>
 <body>
@@ -26,151 +130,1039 @@
     <span>IT-MANIA</span>
   </div>
   <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
-  <a href="lessons.html"><span class="icon">📚</span> Мои уроки</a>
+  <a href="lessons.html" ><span class="icon">📚</span> Мои уроки</a>
   <a href="progress-map.html"><span class="icon">🗺️</span> Карта прогресса</a>
+  <a href="submissions.html"><span class="icon">📋</span> Задания</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
   <a href="sandbox.html" class="active"><span class="icon">🧪</span> Песочница</a>
   <a href="shop.html"><span class="icon">🎪</span> Магазин</a>
   <a href="leaderboard.html"><span class="icon">🏆</span> Рейтинг</a>
-  <a href="tickets.html"><span class="icon">🎫</span> Мои тикеты</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Обращения</a>
   <div class="sidebar-bottom">
     <a href="profile.html"><span class="icon">👤</span> Профиль</a>
     <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
   </div>
 </aside>
-<main class="main-content" style="padding:16px;">
-  <div class="topbar" style="margin-bottom:12px;">
+
+<main class="main-content" style="padding:12px 16px;">
+  <div class="topbar" style="margin-bottom:10px;">
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
-    <h1>🧪 Песочница</h1>
+    <h1 style="margin:0;font-size:1.2rem;">🧪 Песочница кода</h1>
     <div class="topbar-right">
       <button class="sound-btn" id="soundBtn">🔊</button>
-      <div class="user-avatar" id="userAvatar">?</div>
+      <button id="themeToggleBtn" onclick="toggleTheme(); updateThemeBtnIcon();" style="background:none;border:none;font-size:1.3rem;cursor:pointer;opacity:0.6;transition:0.3s;" title="Переключить тему">🌙</button>
+      <div class="user-avatar" id="userAvatar" onclick="location.href='profile.html'" title="Профиль">?</div>
     </div>
   </div>
 
-  <div class="lang-tabs">
-    <button class="lang-tab active" onclick="setLang('javascript',this)">JavaScript</button>
-    <button class="lang-tab" onclick="setLang('html',this)">HTML</button>
-    <button class="lang-tab" onclick="setLang('css',this)">CSS</button>
-    <button class="lang-tab" onclick="setLang('python',this)">Python</button>
-    <div style="margin-left:auto;display:flex;gap:8px;">
-      <button onclick="runSandbox()" style="background:var(--accent);color:white;border:none;border-radius:20px;padding:8px 20px;font-weight:700;cursor:pointer;font-family:inherit;">▶ Запустить</button>
-      <button onclick="clearSandbox()" style="background:var(--bg);border:none;border-radius:20px;padding:8px 16px;font-weight:700;cursor:pointer;font-family:inherit;">🗑 Очистить</button>
+  <div class="tool-row">
+    <div class="lang-tabs" id="langTabs">
+      <button class="lang-tab active" data-lang="javascript" onclick="setLang('javascript',this)"><span class="lang-icon">📜</span>JS</button>
+      <button class="lang-tab" data-lang="html" onclick="setLang('html',this)"><span class="lang-icon">🌐</span>HTML</button>
+      <button class="lang-tab" data-lang="css" onclick="setLang('css',this)"><span class="lang-icon">🎨</span>CSS</button>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="btn-sm btn-template" onclick="showTemplates()">📋 Шаблоны</button>
+      <button class="btn-sm btn-load" onclick="showSavedProjects()">💾 Проекты</button>
+      <button class="btn-sm btn-format" onclick="formatCode()">✨ Формат</button>
+      <button class="btn-sm btn-save" onclick="showSavePopup()">💾 Сохранить</button>
+      <button class="btn-sm btn-clear" onclick="clearSandbox()">🗑</button>
+      <button class="btn-sm btn-run" onclick="runSandbox()" id="runBtn">▶ Запустить</button>
     </div>
   </div>
+
+  <canvas id="starsCanvas"></canvas>
 
   <div class="sandbox-layout">
     <div class="editor-panel">
-      <div style="background:#1e1e1e;border-radius:16px 16px 0 0;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;">
-        <span style="color:#888;font-size:0.85rem;" id="sandboxLangLabel">JavaScript</span>
-        <span style="color:#555;font-size:0.75rem;">Ctrl+Enter — запустить</span>
+      <div class="editor-header">
+        <div class="dot-row">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+        </div>
+        <span style="color:#888;font-size:0.78rem;" id="sandboxLangLabel">JavaScript</span>
+        <span style="color:#555;font-size:0.7rem;">Ctrl+Enter — запуск</span>
       </div>
       <div id="monacoSandbox"></div>
-    </div>
-    <div class="preview-panel">
-      <div style="background:#f5f5f5;padding:8px 16px;font-size:0.85rem;font-weight:600;color:#888;border-bottom:1px solid #eee;">
-        Результат
+      <div class="status-bar">
+        <span id="statusLang">JavaScript</span>
+        <span>UTF-8</span>
+        <span class="status-right" id="statusLines">Ln 1, Col 1</span>
       </div>
-      <iframe id="previewFrame" sandbox="allow-scripts"></iframe>
-      <div id="consoleOutput" style="background:#1e1e1e;color:#4ec9b0;font-family:monospace;font-size:0.85rem;padding:12px 16px;max-height:120px;overflow-y:auto;display:none;"></div>
+    </div>
+
+    <div class="preview-panel">
+      <div class="preview-header">
+        <span id="outputLabel">💻 Консоль</span>
+        <div class="preview-toggle-row">
+          <button class="preview-mode-btn active" onclick="setPreviewMode('console')" id="modeConsole">Консоль</button>
+          <button class="preview-mode-btn" onclick="setPreviewMode('preview')" id="modePreview">Превью</button>
+        </div>
+        <span id="runTime" style="font-size:0.72rem;color:#aaa;"></span>
+      </div>
+      <iframe id="previewFrame" sandbox="allow-scripts allow-modals" style="display:none;"></iframe>
+      <div id="previewEmpty" class="empty-state" style="display:none;">
+        <div class="es-icon">🌐</div>
+        <div class="es-text">Нажми «Запустить» для HTML/CSS превью</div>
+      </div>
+      <div class="console-out" id="consoleOutput">
+        <span class="info-line">▶ Готов к работе. Напиши код и нажми «Запустить».</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Сохранённые проекты -->
+  <div id="savedProjectsSection" style="display:none;margin-top:16px;">
+    <div class="content-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h2 style="margin:0;">💾 Сохранённые проекты</h2>
+        <button class="toggle-saved" onclick="hideSavedProjects()">✕ Скрыть</button>
+      </div>
+      <div class="saved-projects" id="savedProjectsList"></div>
+    </div>
+  </div>
+
+  <!-- Секция шаблонов -->
+  <div id="templatesSection" style="display:none;margin-top:16px;">
+    <div class="content-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h2 style="margin:0;">📋 Шаблоны кода</h2>
+        <button class="toggle-saved" onclick="hideTemplates()">✕ Скрыть</button>
+      </div>
+      <div class="template-grid" id="templateGrid"></div>
     </div>
   </div>
 </main>
 
-<div id="cat-assistant">
-  <div class="cat-bubble" id="catBubble"></div>
-  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+<!-- Попап сохранения -->
+<div class="overlay" id="saveOverlay" onclick="hideSavePopup()"></div>
+<div class="save-popup" id="savePopup">
+  <h3 style="margin:0 0 4px 0;">💾 Сохранить проект</h3>
+  <p style="color:#888;font-size:0.85rem;margin:0 0 4px 0;">Название для вашего проекта</p>
+  <input type="text" id="saveProjectName" placeholder="Мой проект..." autocomplete="off">
+  <div style="display:flex;gap:8px;margin-top:16px;">
+    <button class="btn-sm btn-save" style="flex:1;justify-content:center;" onclick="saveProject()">💾 Сохранить</button>
+    <button class="btn-sm btn-clear" onclick="hideSavePopup()">Отмена</button>
+  </div>
 </div>
 
-<script src="../../js/app.js"></script>
-<script>
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/cat.png" alt="Кот" id="catImage" onerror="this.style.display='none'">
+</div>
+
+  <script src="../../js/app.js"></script>
+  <script src="../../js/shop-effects.js"></script>
+  <script src="../../js/theme-manager.js"></script>
+  <script>
+  // ============================================================
+  // ИНИЦИАЛИЗАЦИЯ
+  // ============================================================
   requireAuth(['student']);
+
+  // Отключаем автопривязку кота из app.js — управляем сами
+  window._sandboxCatManaged = true;
 
   let sandboxEditor = null;
   let currentLang = 'javascript';
+  let currentProjectName = '';
+  let previewMode = 'console';
 
+  // ============================================================
+  // СТАРТОВЫЙ КОД
+  // ============================================================
   const starterCode = {
-    javascript: '// Привет! Пиши код здесь\nconsole.log("Привет, мир!");\n',
-    html: '<!DOCTYPE html>\n<html>\n<head><style>body{font-family:sans-serif;background:#f0e8ff;}</style></head>\n<body>\n  <h1 style="color:#9900FF">Привет, IT-MANIA! 🚀</h1>\n  <p>Создай что-нибудь крутое!</p>\n</body>\n</html>',
-    css: '/* CSS песочница */\nbody {\n  background: linear-gradient(135deg, #9900FF, #BB44FF);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  height: 100vh;\n  margin: 0;\n}\n.box {\n  background: white;\n  border-radius: 20px;\n  padding: 40px;\n  font-size: 2rem;\n  font-weight: 800;\n  color: #9900FF;\n}',
-    python: '# Python запускается на сервере\nprint("Привет, мир!")\nfor i in range(5):\n    print(f"Число: {i}")\n'
+    javascript: `// Привет! Пиши код здесь 🚀
+console.log("Привет, IT-MANIA!");
+
+// Пример: создай свою игру или программу
+function greet(name) {
+  return "Привет, " + name + "! Добро пожаловать в мир кода 💻";
+}
+
+console.log(greet("ученик"));
+
+// Быстрый пример: таблица умножения
+for (let i = 1; i <= 5; i++) {
+  console.log(i + " × 5 = " + (i * 5));
+}`,
+    html: `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Nunito',sans-serif; background:linear-gradient(135deg,#667eea,#764ba2); min-height:100vh; display:flex; align-items:center; justify-content:center; }
+    .card { background:rgba(255,255,255,0.15); backdrop-filter:blur(14px); border-radius:24px; padding:40px; max-width:420px; text-align:center; color:white; box-shadow:0 8px 40px rgba(0,0,0,0.15); }
+    h1 { font-size:2.2rem; margin-bottom:12px; }
+    p { font-size:1rem; line-height:1.6; opacity:0.9; }
+    .btn { display:inline-block; background:white; color:#667eea; padding:12px 32px; border-radius:30px; font-weight:700; margin-top:20px; cursor:pointer; text-decoration:none; transition:0.3s; }
+    .btn:hover { transform:scale(1.05); box-shadow:0 4px 20px rgba(0,0,0,0.2); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🚀 IT-MANIA</h1>
+    <p>Твоя веб-страница готова! Меняй код и сразу смотри результат в превью.</p>
+    <div class="btn" onclick="alert('Привет!')">Нажми меня!</div>
+  </div>
+  <script src="../../js/theme-manager.js"><\/script>
+</body>
+</html>`,
+    css: `/* CSS песочница — смотри превью */
+body {
+  background: linear-gradient(135deg, #1a1a2e, #330066);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+  font-family: sans-serif;
+}
+
+.card {
+  background: white;
+  border-radius: 24px;
+  padding: 40px 48px;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(153,0,255,0.3);
+  animation: float 3s ease-in-out infinite;
+}
+
+.card h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #9900FF;
+  margin: 0 0 8px;
+}
+
+.card p {
+  color: #888;
+  margin: 0;
+}
+
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}`
   };
 
+  // ============================================================
+  // ШАБЛОНЫ
+  // ============================================================
+  const templates = [
+    { name: 'Игра "Угадай число"', lang: 'javascript', icon: '🎮', desc: 'Консольная игра',
+      code: `// Игра "Угадай число"
+const secret = Math.floor(Math.random() * 100) + 1;
+console.log("🎮 Я загадал число от 1 до 100!");
+console.log("Загаданное число: " + secret);
+
+const guesses = [50, 25, 75, 60, 42];
+guesses.forEach(g => {
+  if (g > secret) console.log(g + " — Много! 📉");
+  else if (g < secret) console.log(g + " — Мало! 📈");
+  else console.log(g + " — Верно! 🎉");
+});
+console.log("Попробуй сам в консоли! 😄");` },
+    { name: 'Калькулятор', lang: 'javascript', icon: '🔢', desc: 'Простые вычисления',
+      code: `// Калькулятор
+function calc(a, op, b) {
+  switch(op) {
+    case '+': return a + b;
+    case '-': return a - b;
+    case '*': return a * b;
+    case '/': return b !== 0 ? a / b : 'Ошибка: деление на 0';
+    case '%': return a % b;
+    default: return 'Неизвестная операция';
+  }
+}
+
+console.log("=== КАЛЬКУЛЯТОР 🔢 ===");
+console.log("5 + 3 =", calc(5, '+', 3));
+console.log("10 - 4 =", calc(10, '-', 4));
+console.log("7 * 6 =", calc(7, '*', 6));
+console.log("15 / 3 =", calc(15, '/', 3));
+console.log("17 % 5 =", calc(17, '%', 5));` },
+    { name: 'Генератор паролей', lang: 'javascript', icon: '🔐', desc: 'Случайные пароли',
+      code: `// Генератор паролей
+function generatePassword(length) {
+  length = length || 12;
+  var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+  var password = "";
+  for (var i = 0; i < length; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}
+
+console.log("🔐 Твои надёжные пароли:");
+for (var i = 1; i <= 5; i++) {
+  console.log(i + ". " + generatePassword(16));
+}` },
+    { name: 'Веб-страница', lang: 'html', icon: '🌐', desc: 'Красивая страница',
+      code: starterCode.html },
+    { name: 'CSS Анимации', lang: 'css', icon: '✨', desc: 'Плавные анимации',
+      code: starterCode.css },
+  ];
+
+  // ============================================================
+  // УТИЛИТЫ
+  // ============================================================
+  function getLangName(lang) {
+    const map = { javascript:'JavaScript', html:'HTML', css:'CSS' };
+    return map[lang] || lang;
+  }
+
+  function getMonacoLang(lang) {
+    const map = { javascript:'javascript', html:'html', css:'css' };
+    return map[lang] || 'javascript';
+  }
+
+  function escapeHTML(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function formatTime(ms) {
+    if (ms < 1000) return Math.round(ms) + 'ms';
+    return (ms / 1000).toFixed(2) + 's';
+  }
+
+  function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diff = now - d;
+    if (diff < 60000) return 'только что';
+    if (diff < 3600000) return Math.floor(diff / 60000) + ' мин. назад';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + ' ч. назад';
+    return d.toLocaleDateString('ru', { day:'numeric', month:'short' });
+  }
+
+  // ============================================================
+  // MONACO ИНИЦИАЛИЗАЦИЯ
+  // ============================================================
   require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' } });
-  require(['vs/editor/editor.main'], () => {
+  require(['vs/editor/editor.main'], function() {
     sandboxEditor = monaco.editor.create(document.getElementById('monacoSandbox'), {
       value: starterCode.javascript,
       language: 'javascript',
-      theme: 'vs-dark',
+      theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'vs-dark' : 'vs',
       fontSize: 14,
+      fontFamily: "'Fira Code', 'Consolas', 'Courier New', monospace",
       minimap: { enabled: false },
       automaticLayout: true,
       scrollBeyondLastLine: false,
-      padding: { top: 12 }
+      padding: { top: 12 },
+      lineNumbers: 'on',
+      wordWrap: 'on',
+      tabSize: 2,
+      renderLineHighlight: 'line',
+      cursorBlinking: 'smooth',
+      smoothScrolling: true,
+      bracketPairColorization: { enabled: true },
+      guides: { indentation: true, bracketPairs: true }
     });
 
-    // Ctrl+Enter — запуск
+    // Горячие клавиши
     sandboxEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, runSandbox);
+    sandboxEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function(e) { e.preventDefault(); showSavePopup(); });
+
+    // Статус-бар с позицией курсора
+    sandboxEditor.onDidChangeCursorPosition(function(e) {
+      const sl = document.getElementById('statusLines'); if (sl) sl.textContent = 'Ln ' + e.position.lineNumber + ', Col ' + e.position.column;
+    });
+
+    restoreLastProject();
+    init();
+    
+    // Загружаем эффекты магазина (скины редактора, бусты и т.д.)
+    if (typeof loadShopEffects === 'function') {
+      setTimeout(function() { loadShopEffects(); }, 500);
+    }
+    // Следим за сменой темы (темная/светлая)
+    function updateMonacoTheme() {
+      if (!sandboxEditor) return;
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      monaco.editor.setTheme(isDark ? 'vs-dark' : 'vs');
+    }
+    const themeObserver = new MutationObserver(function() {
+      updateMonacoTheme();
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    window.updateMonacoTheme = updateMonacoTheme;
   });
 
+  // ============================================================
+  // ИНИЦИАЛИЗАЦИЯ ДАННЫХ ПОЛЬЗОВАТЕЛЯ
+  // ============================================================
   async function init() {
-    const user = await api('/api/auth/me');
-    if (user) document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+    try {
+      const user = await api('/api/auth/me');
+      if (user && typeof updateTopbarAvatar === 'function') {
+        await updateTopbarAvatar(user);
+      }
+    } catch (e) {
+      // не критично
+    }
+    updatePreviewUI();
+    initSandboxCat();
+  }
+
+  // ============================================================
+  // ВОССТАНОВЛЕНИЕ ПОСЛЕДНЕГО ПРОЕКТА
+  // ============================================================
+  function restoreLastProject() {
+    try {
+      const last = localStorage.getItem('sandbox_last');
+      if (!last || !sandboxEditor) return;
+      const data = JSON.parse(last);
+      if (data.lang && typeof data.code === 'string') {
+        currentLang = data.lang;
+        currentProjectName = data.name || '';
+        updateLangTabs();
+        setEditorContent(data.lang, data.code);
+        updatePreviewUI();
+      }
+    } catch (e) {
+      // игнорируем ошибки парсинга
+    }
+  }
+
+  // ============================================================
+  // УПРАВЛЕНИЕ ЯЗЫКОМ
+  // ============================================================
+  function updateLangTabs() {
+    const tabs = document.querySelectorAll('.lang-tab');
+    tabs.forEach(function(b) { b.classList.remove('active'); });
+    const activeTab = document.querySelector('.lang-tab[data-lang="' + currentLang + '"]');
+    if (activeTab) activeTab.classList.add('active');
+    const langLabel = document.getElementById('sandboxLangLabel');
+    if (langLabel) langLabel.textContent = getLangName(currentLang);
+    const statusLang = document.getElementById('statusLang');
+    if (statusLang) statusLang.textContent = getLangName(currentLang);
+  }
+
+  function setEditorContent(lang, code) {
+    if (!sandboxEditor) return;
+    monaco.editor.setModelLanguage(sandboxEditor.getModel(), getMonacoLang(lang));
+    sandboxEditor.setValue(code || starterCode[lang] || '');
+  }
+
+  function updateEditor() {
+    if (!sandboxEditor) return;
+    // Проверяем: есть ли сохранённый код для ЭТОГО языка
+    const last = localStorage.getItem('sandbox_last');
+    if (last) {
+      try {
+        const data = JSON.parse(last);
+        if (data.lang === currentLang && typeof data.code === 'string') {
+          sandboxEditor.setValue(data.code);
+          currentProjectName = data.name || '';
+          return;
+        }
+      } catch (e) {}
+    }
+    // Нет сохранения для этого языка — загружаем стартовый
+    sandboxEditor.setValue(starterCode[currentLang] || '// Пиши код здесь\n');
+    currentProjectName = '';
   }
 
   function setLang(lang, btn) {
+    if (currentLang === lang) return;
     currentLang = lang;
-    document.querySelectorAll('.lang-tab').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('sandboxLangLabel').textContent = btn.textContent;
-    if (sandboxEditor) {
-      monaco.editor.setModelLanguage(sandboxEditor.getModel(), lang === 'python' ? 'python' : lang);
-      sandboxEditor.setValue(starterCode[lang] || '');
+
+    // Для невизуальных языков возвращаем консоль
+    if (lang !== 'html' && lang !== 'css' && previewMode === 'preview') {
+      setPreviewMode('console');
     }
-    playSound('ding');
+
+    updateLangTabs();
+    updateEditor();
+    updatePreviewUI();
+    if (typeof playSound === 'function') playSound('ding');
+    sandboxShowCat(getLangMessage(lang));
   }
 
+  function getLangMessage(lang) {
+    const msgs = {
+      javascript: 'JavaScript — язык веба! Пиши крутые скрипты 🚀',
+      html: 'HTML — переключи на вкладку «Превью» чтобы увидеть страницу! 🌐',
+      css: 'CSS — стили для веба. Используй превью для просмотра! 🎨'
+    };
+    return msgs[lang] || 'Пиши код и запускай! 🚀';
+  }
+
+  // ============================================================
+  // УПРАВЛЕНИЕ ПРЕВЬЮ / КОНСОЛЬ
+  // ============================================================
+  function updatePreviewUI() {
+    const isVisual = currentLang === 'html' || currentLang === 'css';
+    const modePreviewBtn = document.getElementById('modePreview');
+    if (modePreviewBtn) {
+      modePreviewBtn.style.display = isVisual ? '' : 'none';
+    }
+    if (!isVisual && previewMode === 'preview') {
+      setPreviewMode('console');
+    }
+  }
+
+  function setPreviewMode(mode) {
+    previewMode = mode;
+    const modeConsoleBtn = document.getElementById('modeConsole');
+    const modePreviewBtn = document.getElementById('modePreview');
+    if (modeConsoleBtn) modeConsoleBtn.classList.toggle('active', mode === 'console');
+    if (modePreviewBtn) modePreviewBtn.classList.toggle('active', mode === 'preview');
+
+    const frame = document.getElementById('previewFrame');
+    const empty = document.getElementById('previewEmpty');
+    const consoleOut = document.getElementById('consoleOutput');
+
+    if (frame) frame.style.display = mode === 'preview' ? 'block' : 'none';
+    if (consoleOut) consoleOut.style.display = mode === 'console' ? 'block' : 'none';
+
+    if (mode === 'preview' && frame) {
+      const code = sandboxEditor ? sandboxEditor.getValue() : '';
+      if (currentLang === 'html') {
+        frame.srcdoc = code;
+        if (empty) empty.style.display = 'none';
+      } else if (currentLang === 'css') {
+        const htmlWrap = '<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width"><style>' + code + '</style></head><body><div class="card"><h1>IT-MANIA</h1><p>Твой CSS работает!</p></div></body></html>';
+        frame.srcdoc = htmlWrap;
+        if (empty) empty.style.display = 'none';
+      } else {
+        if (empty) empty.style.display = 'flex';
+      }
+    }
+
+    const outputLabel = document.getElementById('outputLabel');
+    if (outputLabel) outputLabel.textContent = mode === 'preview' ? '🌐 Превью' : '💻 Консоль';
+  }
+
+  // ============================================================
+  // ЗАПУСК КОДА
+  // ============================================================
   async function runSandbox() {
     if (!sandboxEditor) return;
     const code = sandboxEditor.getValue();
-    playSound('ding');
+    const startTime = performance.now();
+    if (typeof playSound === 'function') playSound('ding');
+    autoSave(code);
 
+    // HTML — превью в iframe (без сервера)
     if (currentLang === 'html') {
-      document.getElementById('previewFrame').style.display = 'block';
-      document.getElementById('consoleOutput').style.display = 'none';
-      document.getElementById('previewFrame').srcdoc = code;
+      const frame = document.getElementById('previewFrame');
+      if (frame) frame.srcdoc = code;
+      const empty = document.getElementById('previewEmpty');
+      if (empty) empty.style.display = 'none';
+      setPreviewMode('preview');
+      const olHtml = document.getElementById('outputLabel'); if (olHtml) olHtml.textContent = '🌐 HTML Превью';
+      const rtHtml = document.getElementById('runTime'); if (rtHtml) rtHtml.textContent = formatTime(performance.now() - startTime);
+      sandboxShowCat('HTML обновлён! 👀');
       return;
     }
 
+    // CSS — оборачиваем в HTML и показываем в iframe
     if (currentLang === 'css') {
-      const html = `<html><head><style>${code}</style></head><body><div class="box">IT-MANIA 🚀</div></body></html>`;
-      document.getElementById('previewFrame').style.display = 'block';
-      document.getElementById('consoleOutput').style.display = 'none';
-      document.getElementById('previewFrame').srcdoc = html;
+      const htmlWrap = '<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width"><style>' + code + '</style></head><body><div class="card"><h1>IT-MANIA</h1><p>Твой CSS работает!</p></div></body></html>';
+      const frame = document.getElementById('previewFrame');
+      if (frame) frame.srcdoc = htmlWrap;
+      const empty = document.getElementById('previewEmpty');
+      if (empty) empty.style.display = 'none';
+      setPreviewMode('preview');
+      const olCss = document.getElementById('outputLabel'); if (olCss) olCss.textContent = '🎨 CSS Превью';
+      const rtCss = document.getElementById('runTime'); if (rtCss) rtCss.textContent = formatTime(performance.now() - startTime);
+      sandboxShowCat('Стили применены! ✨');
       return;
     }
 
-    // JS и Python — через сервер
-    document.getElementById('previewFrame').style.display = 'none';
-    document.getElementById('consoleOutput').style.display = 'block';
-    document.getElementById('consoleOutput').textContent = 'Запуск...';
+    // JavaScript — локальное выполнение (безопасное, через new Function)
+    if (currentLang === 'javascript') {
+      setPreviewMode('console');
+      const olJs = document.getElementById('outputLabel'); if (olJs) olJs.textContent = '💻 Консоль (JS)';
+      const out = document.getElementById('consoleOutput');
+      out.innerHTML = '<span class="info-line">▶ Запуск (локально)...</span>';
 
-    const res = await api('/api/run-code', { method: 'POST', body: JSON.stringify({ code, language: currentLang }) });
-    const out = document.getElementById('consoleOutput');
-    out.textContent = '> ' + (res?.output || '(нет вывода)');
-    out.style.color = res?.error ? '#f44747' : '#4ec9b0';
-    playSound(res?.error ? 'error' : 'success');
+      const logs = [];
+      const fakeConsole = {
+        log: function() {
+          const args = Array.prototype.slice.call(arguments);
+          logs.push(args.map(function(a) { return typeof a === 'object' ? JSON.stringify(a) : String(a); }).join(' '));
+        },
+        error: function() { logs.push('[error] ' + Array.prototype.slice.call(arguments).map(String).join(' ')); },
+        warn: function() { logs.push('[warn] ' + Array.prototype.slice.call(arguments).map(String).join(' ')); }
+      };
+      try {
+        const fn = new Function('console', code);
+        fn(fakeConsole);
+        out.innerHTML = '';
+        (logs.length ? logs : ['(нет вывода)']).forEach(function(line) {
+          const div = document.createElement('div');
+          div.textContent = line;
+          out.appendChild(div);
+        });
+        const rtJs1 = document.getElementById('runTime'); if (rtJs1) rtJs1.textContent = formatTime(performance.now() - startTime);
+        if (typeof playSound === 'function') playSound('success');
+        if (typeof spawnStars === 'function') spawnStars(3);
+      } catch (e) {
+        out.innerHTML = '<div class="error-line">❌ ' + escapeHTML(e.message) + '</div>';
+        const rtJsErr = document.getElementById('runTime'); if (rtJsErr) rtJsErr.textContent = formatTime(performance.now() - startTime);
+        if (typeof playSound === 'function') playSound('error');
+      }
+      return;
+    }
+
+    // Неизвестный язык
+    sandboxShowCat('Неизвестный язык 😿');
   }
 
+  // ============================================================
+  // ФОРМАТИРОВАНИЕ КОДА
+  // ============================================================
+  function formatCode() {
+    if (!sandboxEditor) return;
+    sandboxEditor.getAction('editor.action.formatDocument').run();
+    if (typeof playSound === 'function') playSound('ding');
+    sandboxShowCat('Код отформатирован! ✨' + ' Теперь всё красиво 💅');
+  }
+
+  // ============================================================
+  // ОЧИСТКА ПЕСОЧНИЦЫ
+  // ============================================================
   function clearSandbox() {
-    if (sandboxEditor) sandboxEditor.setValue(starterCode[currentLang] || '');
-    document.getElementById('previewFrame').srcdoc = '';
-    document.getElementById('consoleOutput').textContent = '';
-    playSound('ding');
+    if (!sandboxEditor) return;
+    if (!confirm('Очистить песочницу и вернуть стартовый код?')) return;
+    sandboxEditor.setValue(starterCode[currentLang] || '');
+    currentProjectName = '';
+    const conOut = document.getElementById('consoleOutput');
+    if (conOut) conOut.innerHTML = '<span class="info-line">▶ Песочница очищена.</span>';
+    const rtEmpty = document.getElementById('runTime'); if (rtEmpty) rtEmpty.textContent = '';
+    // Удаляем сохранение для текущего языка
+    try {
+      const last = localStorage.getItem('sandbox_last');
+      if (last) {
+        const data = JSON.parse(last);
+        if (data.lang === currentLang) {
+          localStorage.removeItem('sandbox_last');
+        }
+      }
+    } catch (e) {}
+    if (typeof playSound === 'function') playSound('click');
   }
 
-  init();
+  // ============================================================
+  // СОХРАНЕНИЕ ПРОЕКТА
+  // ============================================================
+  function showSavePopup() {
+    if (!sandboxEditor) return;
+    document.getElementById('saveOverlay').classList.add('show');
+    document.getElementById('savePopup').classList.add('show');
+    const input = document.getElementById('saveProjectName');
+    input.value = currentProjectName || '';
+    input.focus();
+    // Enter сохраняет
+    input.onkeydown = function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); saveProject(); }
+    };
+  }
+
+  function hideSavePopup() {
+    document.getElementById('saveOverlay').classList.remove('show');
+    document.getElementById('savePopup').classList.remove('show');
+  }
+
+  function saveProject() {
+    if (!sandboxEditor) return;
+    const nameInput = document.getElementById('saveProjectName');
+    let name = (nameInput.value || '').trim();
+    if (!name) {
+      name = 'Проект ' + new Date().toLocaleDateString('ru', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+    }
+
+    const code = sandboxEditor.getValue();
+    const project = {
+      name: name,
+      lang: currentLang,
+      code: code,
+      savedAt: new Date().toISOString()
+    };
+
+    // Сохраняем в localStorage
+    let projects = [];
+    try {
+      projects = JSON.parse(localStorage.getItem('sandbox_projects') || '[]');
+    } catch (e) {}
+    projects.unshift(project);
+    // Максимум 30 проектов
+    if (projects.length > 30) projects = projects.slice(0, 30);
+    localStorage.setItem('sandbox_projects', JSON.stringify(projects));
+
+    currentProjectName = name;
+    hideSavePopup();
+    if (typeof playSound === 'function') playSound('success');
+    sandboxShowCat('Проект «' + name + '» сохранён! 💾');
+  }
+
+  // ============================================================
+  // АВТОСОХРАНЕНИЕ (последний код)
+  // ============================================================
+  function autoSave(code) {
+    if (!code && sandboxEditor) code = sandboxEditor.getValue();
+    if (!code) return;
+    try {
+      localStorage.setItem('sandbox_last', JSON.stringify({
+        lang: currentLang,
+        code: code,
+        name: currentProjectName || '',
+        savedAt: new Date().toISOString()
+      }));
+    } catch (e) {
+      // localStorage переполнен — удаляем старые проекты
+      try {
+        localStorage.removeItem('sandbox_projects');
+        localStorage.setItem('sandbox_last', JSON.stringify({
+          lang: currentLang,
+          code: code,
+          name: currentProjectName || '',
+          savedAt: new Date().toISOString()
+        }));
+      } catch (e2) {}
+    }
+  }
+
+  // ============================================================
+  // УПРАВЛЕНИЕ ПРОЕКТАМИ
+  // ============================================================
+  function showSavedProjects() {
+    const section = document.getElementById('savedProjectsSection');
+    const list = document.getElementById('savedProjectsList');
+    if (!section || !list) return;
+
+    let projects = [];
+    try {
+      projects = JSON.parse(localStorage.getItem('sandbox_projects') || '[]');
+    } catch (e) {}
+
+    list.innerHTML = '';
+    if (projects.length === 0) {
+      list.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">Нет сохранённых проектов</div>';
+    } else {
+      projects.forEach(function(p, i) {
+        const div = document.createElement('div');
+        div.className = 'saved-project-item';
+        div.innerHTML =
+          '<div>' +
+            '<div class="sp-name">' + escapeHTML(p.name || 'Без названия') + '</div>' +
+            '<div class="sp-meta">' +
+              '<span>' + getLangName(p.lang) + '</span>' +
+              '<span>' + formatDate(p.savedAt) + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="sp-actions">' +
+            '<button class="btn-sm btn-load" style="padding:4px 10px;font-size:0.72rem;" data-idx="' + i + '">📂 Загрузить</button>' +
+            '<button class="delete-btn" data-idx="' + i + '">✕</button>' +
+          '</div>';
+        list.appendChild(div);
+      });
+
+      // Навешиваем обработчики
+      list.querySelectorAll('.btn-sm.btn-load').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          loadProject(parseInt(this.getAttribute('data-idx')));
+        });
+      });
+      list.querySelectorAll('.delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          deleteProject(parseInt(this.getAttribute('data-idx')));
+        });
+      });
+    }
+
+    section.style.display = 'block';
+    if (list.scrollIntoView) list.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function hideSavedProjects() {
+    const section = document.getElementById('savedProjectsSection');
+    if (section) section.style.display = 'none';
+  }
+
+  function loadProject(index) {
+    let projects = [];
+    try {
+      projects = JSON.parse(localStorage.getItem('sandbox_projects') || '[]');
+    } catch (e) { return; }
+
+    if (index < 0 || index >= projects.length) return;
+    const p = projects[index];
+
+    if (p.lang !== currentLang) {
+      currentLang = p.lang;
+      updateLangTabs();
+      updatePreviewUI();
+    }
+    setEditorContent(p.lang, p.code);
+    currentProjectName = p.name || '';
+    hideSavedProjects();
+    if (typeof playSound === 'function') playSound('success');
+    sandboxShowCat('Проект «' + escapeHTML(p.name) + '» загружен! 📂');
+  }
+
+  function deleteProject(index) {
+    let projects = [];
+    try {
+      projects = JSON.parse(localStorage.getItem('sandbox_projects') || '[]');
+    } catch (e) { return; }
+
+    if (index < 0 || index >= projects.length) return;
+    const p = projects[index];
+    if (!confirm('Удалить проект «' + (p.name || 'Без названия') + '»?')) return;
+
+    projects.splice(index, 1);
+    localStorage.setItem('sandbox_projects', JSON.stringify(projects));
+    if (typeof playSound === 'function') playSound('click');
+    showSavedProjects(); // перерисовываем
+  }
+
+  // ============================================================
+  // ШАБЛОНЫ
+  // ============================================================
+  function showTemplates() {
+    const section = document.getElementById('templatesSection');
+    const grid = document.getElementById('templateGrid');
+    if (!section || !grid) return;
+
+    grid.innerHTML = '';
+    templates.forEach(function(t) {
+      const card = document.createElement('button');
+      card.className = 'template-card';
+      card.innerHTML =
+        '<div class="tc-icon">' + t.icon + '</div>' +
+        '<div class="tc-name">' + escapeHTML(t.name) + '</div>' +
+        '<div class="tc-desc">' + getLangName(t.lang) + ' — ' + escapeHTML(t.desc) + '</div>';
+      card.addEventListener('click', function() { loadTemplate(t); });
+      grid.appendChild(card);
+    });
+
+    section.style.display = 'block';
+    if (grid.scrollIntoView) grid.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function hideTemplates() {
+    const section = document.getElementById('templatesSection');
+    if (section) section.style.display = 'none';
+  }
+
+  function loadTemplate(t) {
+    if (t.lang !== currentLang) {
+      currentLang = t.lang;
+      updateLangTabs();
+      updatePreviewUI();
+    }
+    setEditorContent(t.lang, t.code);
+    currentProjectName = t.name || '';
+    hideTemplates();
+    if (typeof playSound === 'function') playSound('success');
+    sandboxShowCat('Шаблон «' + escapeHTML(t.name) + '» загружен! 📋');
+  }
+
+  // ============================================================
+  // КОТ-ПОМОЩНИК
+  // ============================================================
+  let catTimer = null;
+
+  function initSandboxCat() {
+    const catDiv = document.getElementById('cat-assistant');
+    const catImage = document.getElementById('catImage');
+    const catBubble = document.getElementById('catBubble');
+    if (!catDiv || !catImage || !catBubble) return;
+
+    // Показываем начальное сообщение через 1 секунду
+    setTimeout(function() {
+      sandboxShowCat('Привет! Я твой кот-помощник 😸 Пиши код и экспериментируй!');
+    }, 1000);
+
+    // Клик по коту — показываем рандомный совет
+    if (catImage) {
+      catImage.style.cursor = 'pointer';
+      catImage.addEventListener('click', function() {
+        const tips = [
+          'Попробуй сохранить проект! 💾',
+          'Нажми Ctrl+Enter чтобы запустить код ⚡',
+          'Используй шаблоны — там крутые примеры! 📋',
+          'Для HTML/CSS переключись на вкладку «Превью» 🌐',
+          'Ты можешь сохранить до 30 проектов! 🗂',
+          'Форматируй код кнопкой ✨ — станет красивее!',
+          'Используй console.log() для вывода в JS 📜',
+          'Ты супер! Продолжай кодить! 🚀'
+        ];
+        const tip = tips[Math.floor(Math.random() * tips.length)];
+        sandboxShowCat(tip);
+      });
+    }
+  }
+
+  function sandboxShowCat(msg) {
+    const catDiv = document.getElementById('cat-assistant');
+    const bubble = document.getElementById('catBubble');
+    if (!catDiv || !bubble) return;
+
+    if (typeof showCatBubble === 'function') {
+      showCatBubble(catDiv, bubble, msg);
+    } else {
+      bubble.textContent = msg;
+      bubble.style.display = 'block';
+      bubble.style.opacity = '1';
+    }
+
+    // Авто-скрытие через 5 секунд
+    if (catTimer) clearTimeout(catTimer);
+    catTimer = setTimeout(hideCat, 5000);
+  }
+
+  function hideCat() {
+    const bubble = document.getElementById('catBubble');
+    if (bubble) {
+      bubble.style.transition = 'opacity 0.5s';
+      bubble.style.opacity = '0';
+      setTimeout(function() {
+        if (bubble.style.opacity === '0') {
+          bubble.style.display = 'none';
+        }
+      }, 500);
+    }
+  }
+
+  // ============================================================
+  // ОБРАБОТЧИКИ UI
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', function() {
+    // Сайдбар
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    if (sidebarToggle) {
+      sidebarToggle.addEventListener('click', function() {
+        document.querySelector('.sidebar').classList.toggle('collapsed');
+      });
+    }
+
+    // Звук
+    const soundBtn = document.getElementById('soundBtn');
+    if (soundBtn) {
+      soundBtn.addEventListener('click', function() {
+        const muted = window._soundMuted = !window._soundMuted;
+        soundBtn.textContent = muted ? '🔇' : '🔊';
+      });
+    }
+
+    // Выход
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (typeof logout === 'function') {
+          logout();
+        } else {
+          localStorage.removeItem('token');
+          window.location.href = '../../index.html';
+        }
+      });
+    }
+  });
+
+  // Автосохранение при уходе
+  window.addEventListener('beforeunload', function() {
+    autoSave();
+  });
+
+  // ============================================================
+  // АНИМИРОВАННЫЕ ЗВЁЗДЫ НА ВЕСЬ ФОН
+  // ============================================================
+  (function initStars() {
+    var canvas = document.getElementById('starsCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var stars = [];
+    var W, H;
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W;
+      canvas.height = H;
+    }
+
+    // Создаём 200 звёзд
+    function createStars() {
+      stars = [];
+      for (var i = 0; i < 200; i++) {
+        stars.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          r: 0.3 + Math.random() * 1.8,
+          speed: 0.08 + Math.random() * 0.25,
+          alpha: 0.3 + Math.random() * 0.7,
+          alphaDir: Math.random() > 0.5 ? 1 : -1,
+          alphaSpeed: 0.002 + Math.random() * 0.008
+        });
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      // Определяем цвет звёзд по теме
+      var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      var starColor = isDark ? '255, 255, 255' : '153, 0, 255';
+
+      stars.forEach(function(s) {
+        // Мерцание
+        s.alpha += s.alphaSpeed * s.alphaDir;
+        if (s.alpha >= 0.9) { s.alpha = 0.9; s.alphaDir = -1; }
+        if (s.alpha <= 0.15) { s.alpha = 0.15; s.alphaDir = 1; }
+
+        // Движение вверх (лёгкое падение — космическая пыль)
+        s.y -= s.speed;
+        if (s.y < -5) {
+          s.y = H + 5;
+          s.x = Math.random() * W;
+        }
+
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(' + starColor + ', ' + s.alpha.toFixed(3) + ')';
+        ctx.fill();
+
+        // Свечение у ярких звёзд
+        if (s.r > 1.2) {
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r * 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(' + starColor + ', ' + (s.alpha * 0.08).toFixed(3) + ')';
+          ctx.fill();
+        }
+      });
+
+      requestAnimationFrame(draw);
+    }
+
+    resize();
+    createStars();
+    draw();
+
+    window.addEventListener('resize', function() {
+      resize();
+      createStars();
+    });
+
+    // Следим за сменой темы — перерисовываем
+    var starObserver = new MutationObserver(function() {
+      // цвета поменяются на следующем кадре
+    });
+    starObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  })();
+
 </script>
 </body>
 </html>
-
-

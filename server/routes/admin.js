@@ -3,7 +3,7 @@ const router = express.Router();
 const { auth, role } = require('../middleware/auth');
 const User = require('../models/User');
 const Group = require('../models/Group');
-const { Application, Notification, Review } = require('../models/Other');
+const { Application, Notification, Review, ChatMessage } = require('../models/Other');
 
 async function normalizeStudentIds(studentIds = []) {
   const uniqueIds = [...new Set(studentIds.filter(Boolean).map(id => String(id)))];
@@ -30,9 +30,10 @@ async function syncGroupStudents(groupId, studentIds = []) {
   const removedStudentIds = currentStudentIds.filter(id => !nextStudentIds.includes(id));
 
   if (removedStudentIds.length) {
+    // Отвязываем учеников — убираем groupId и teacherId (если совпадает)
     await User.updateMany(
       { _id: { $in: removedStudentIds }, groupId: group._id },
-      { $unset: { groupId: '' } }
+      { $unset: { groupId: '', teacherId: '' } }
     );
   }
 
@@ -47,9 +48,10 @@ async function syncGroupStudents(groupId, studentIds = []) {
   await group.save();
 
   if (nextStudentIds.length) {
+    // Привязываем учеников — проставляем groupId И teacherId
     await User.updateMany(
       { _id: { $in: nextStudentIds } },
-      { $set: { groupId: group._id } }
+      { $set: { groupId: group._id, teacherId: group.teacherId } }
     );
   }
 
@@ -122,6 +124,29 @@ router.patch('/users/:id/toggle', auth, role('admin'), async (req, res) => {
     user.isActive = !user.isActive;
     await user.save();
     res.json({ isActive: user.isActive });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Выдать билетики пользователю
+router.post('/users/:id/tickets', auth, role('admin'), async (req, res) => {
+  try {
+    const { amount, reason } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+    
+    user.tickets = (user.tickets || 0) + parseInt(amount || 0);
+    await user.save();
+
+    // Уведомление пользователю
+    await new Notification({ 
+      userId: user._id, 
+      text: `Администратор выдал вам ${amount} билетиков за: ${reason || 'активность'} 🎫`,
+      type: 'success' 
+    }).save();
+
+    res.json({ tickets: user.tickets });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -200,6 +225,35 @@ router.post('/groups/:id/students', auth, role('admin'), async (req, res) => {
 
     const updatedGroup = await getPopulatedGroup(group._id);
 
+    res.json(updatedGroup);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Удалить ученика из группы
+router.delete('/groups/:id/students/:studentId', auth, role('admin'), async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.id);
+    if (!group) {
+      return res.status(404).json({ error: 'Группа не найдена' });
+    }
+
+    const studentId = req.params.studentId;
+    const hadStudent = group.students.some(s => s.toString() === studentId);
+    
+    if (hadStudent) {
+      // Убираем из группы
+      group.students = group.students.filter(s => s.toString() !== studentId);
+      await group.save();
+
+      // Отвязываем ученика от группы и учителя
+      await User.findByIdAndUpdate(studentId, {
+        $unset: { groupId: '', teacherId: '' }
+      });
+    }
+
+    const updatedGroup = await getPopulatedGroup(group._id);
     res.json(updatedGroup);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -295,7 +349,140 @@ router.get('/analytics', auth, role('admin'), async (req, res) => {
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const newStudents = await User.countDocuments({ role: 'student', createdAt: { $gte: weekAgo } });
 
-    res.json({ students, teachers, parents, newApps, groups, newStudents });
+    // Количество заявок по дням за 7 дней
+    const appCounts = [];
+    for (let i = 6; i >= 0; i--) {
+      const dayStart = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+      const count = await Application.countDocuments({ createdAt: { $gte: dayStart, $lte: dayEnd } });
+      appCounts.push(count);
+    }
+
+    res.json({ students, teachers, parents, newApps, groups, newStudents, appCounts });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// === АДМИН ЧАТЫ ===
+
+// Список преподавателей с их группами для админ-чата
+router.get('/chat/teachers', auth, role('admin'), async (req, res) => {
+  try {
+    const teachers = await User.find({ role: 'teacher', isActive: true })
+      .select('firstName lastName login');
+
+    // Для каждого преподавателя находим ВСЕ группы
+    const result = await Promise.all(teachers.map(async (t) => {
+      const groups = await Group.find({ teacherId: t._id }).select('name');
+      return {
+        _id: t._id,
+        firstName: t.firstName,
+        lastName: t.lastName,
+        login: t.login,
+        groups: groups.map(g => ({ _id: g._id, name: g.name })),
+        groupNames: groups.map(g => g.name),
+        groupName: groups.length > 0 ? groups[0].name : null
+      };
+    }));
+
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Список родителей отсортированных по группам детей для админ-чата
+router.get('/chat/parents', auth, role('admin'), async (req, res) => {
+  try {
+    const parents = await User.find({ role: 'parent', isActive: true })
+      .select('firstName lastName login children');
+
+    // Загружаем всех детей родителей с их группами
+    const result = await Promise.all(parents.map(async (p) => {
+      const children = await User.find({ _id: { $in: p.children || [] } })
+        .select('firstName lastName groupId')
+        .populate('groupId', 'name');
+
+      // Группируем детей (может быть несколько групп)
+      const groups = [...new Set(children
+        .filter(c => c.groupId)
+        .map(c => c.groupId.name)
+      )];
+
+      return {
+        _id: p._id,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        login: p.login,
+        children: children.map(c => ({
+          _id: c._id,
+          firstName: c.firstName,
+          lastName: c.lastName,
+          groupName: c.groupId ? c.groupId.name : null
+        })),
+        groups: groups.length > 0 ? groups : ['—']
+      };
+    }));
+
+    // Сортируем: сначала родители, чьи дети в группах, потом остальные
+    // Внутри каждой группы по имени группы
+    result.sort((a, b) => {
+      const aGroup = a.groups[0] || '';
+      const bGroup = b.groups[0] || '';
+      if (aGroup === '—' && bGroup !== '—') return 1;
+      if (aGroup !== '—' && bGroup === '—') return -1;
+      return aGroup.localeCompare(bGroup);
+    });
+
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Получить сообщения между админом и пользователем
+router.get('/chat/:userId', auth, role('admin'), async (req, res) => {
+  try {
+    const messages = await ChatMessage.find({
+      $or: [
+        { studentId: req.user.id, teacherId: req.params.userId },
+        { studentId: req.params.userId, teacherId: req.user.id }
+      ]
+    }).sort('createdAt').limit(200);
+    res.json(messages);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Отправить сообщение пользователю от админа
+router.post('/chat/:userId', auth, role('admin'), async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ error: 'Текст сообщения обязателен' });
+
+    const admin = await User.findById(req.user.id).select('firstName lastName');
+
+    const msg = new ChatMessage({
+      studentId: req.user.id,
+      teacherId: req.params.userId,
+      from: 'teacher',
+      userName: `${admin.firstName || ''} ${admin.lastName || ''}`.trim() || 'Администратор',
+      text
+    });
+    await msg.save();
+
+    // Уведомление получателю
+    await new Notification({
+      userId: req.params.userId,
+      text: `Новое сообщение от администратора`,
+      type: 'info'
+    }).save();
+
+    res.json(msg);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

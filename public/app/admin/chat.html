@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Чаты — Администратор — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    .chat-layout { display:flex;gap:20px;min-height:calc(100vh - 240px);max-height:calc(100vh - 200px);overflow:hidden; }
+    .chat-sidebar { width:320px;flex-shrink:0;overflow:hidden; }
+    .chat-main { flex:1;display:flex;flex-direction:column;min-width:0; }
+    .chat-tabs { display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap; }
+    .chat-tab { padding:8px 18px;border-radius:30px;border:2px solid var(--accent);background:none;color:var(--accent);font-weight:700;cursor:pointer;font-family:inherit;transition:0.3s;font-size:0.85rem; }
+    .chat-tab.active { background:var(--accent);color:white; }
+    .contact-item { display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:16px;cursor:pointer;transition:0.3s;margin-bottom:6px;background:white;box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+    .contact-item:hover { transform:translateX(4px);box-shadow:0 2px 12px rgba(0,0,0,0.1); }
+    .contact-item.active { background:var(--accent);color:white; }
+    .contact-avatar { width:40px;height:40px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;flex-shrink:0; }
+    .contact-item.active .contact-avatar { background:rgba(255,255,255,0.2); }
+    .contact-info { flex:1;min-width:0; }
+    .contact-name { font-weight:700;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .contact-sub { font-size:0.75rem;color:#888; }
+    .contact-item.active .contact-sub { color:rgba(255,255,255,0.7); }
+    .contact-group { font-size:0.7rem;font-weight:600;color:var(--accent);display:inline-block;background:rgba(153,0,255,0.1);padding:2px 8px;border-radius:8px;margin-top:2px; }
+    .contact-item.active .contact-group { background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.9); }
+    .messages-area { flex:1;background:white;border-radius:16px;padding:16px;overflow-y:auto;max-height:calc(100vh - 420px);display:flex;flex-direction:column;gap:8px; }
+    .msg { max-width:80%;padding:10px 16px;border-radius:18px;font-size:0.9rem;line-height:1.4; }
+    .msg.mine { align-self:flex-end;background:var(--accent);color:white;border-bottom-right-radius:4px; }
+    .msg.theirs { align-self:flex-start;background:var(--bg);color:var(--text-dark);border-bottom-left-radius:4px; }
+    .msg-time { font-size:0.65rem;opacity:0.6;margin-top:4px;text-align:right; }
+    .msg-input-area { display:flex;gap:10px;margin-top:12px; }
+    .msg-input { flex:1;border:2px solid #eee;border-radius:24px;padding:12px 18px;font-family:inherit;outline:none;font-size:0.9rem;transition:0.3s; }
+    .msg-input:focus { border-color:var(--accent); }
+    .empty-chat { text-align:center;padding:60px 20px;color:#888; }
+    .empty-chat .icon { font-size:4rem;margin-bottom:12px; }
+    .search-contacts { width:100%;border:2px solid #eee;border-radius:20px;padding:8px 14px;font-family:inherit;outline:none;margin-bottom:12px;font-size:0.85rem; }
+    .group-header { font-size:0.8rem;font-weight:800;color:var(--accent);padding:8px 4px 4px;margin-top:8px;border-bottom:2px solid var(--bg); }
+    .group-header:first-of-type { margin-top:0; }
+    .contact-item .badge-dot { width:6px;height:6px;border-radius:50%;background:#00cc44;flex-shrink:0; }
+    @media(max-width:768px) { .chat-layout { flex-direction:column; } .chat-sidebar { width:100%; } .messages-area { max-height:400px; } }
+  </style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'"><span>IT-MANIA</span></div>
+  <a href="dashboard.html"><span class="icon">📊</span> Дашборд</a>
+  <a href="users.html"><span class="icon">👥</span> Пользователи</a>
+  <a href="groups.html"><span class="icon">🏫</span> Группы</a>
+  <a href="applications.html"><span class="icon">📋</span> Заявки</a>
+  <a href="courses.html"><span class="icon">📚</span> Курсы</a>
+  <a href="payments.html"><span class="icon">💳</span> Оплаты</a>
+  <a href="reviews.html"><span class="icon">⭐</span> Отзывы</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Билетики</a>
+  <a href="chat.html" class="active"><span class="icon">💬</span> Чаты</a>
+  <a href="shop-admin.html"><span class="icon">🎪</span> Магазин</a>
+  <div class="sidebar-bottom">
+    <a href="../student/profile.html"><span class="icon">👤</span> Профиль</a>
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
+    <h1>💬 Чаты с пользователями</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <button class="notif-btn" onclick="toggleNotificationsPanel()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
+      <div class="user-avatar" id="userAvatar">?</div>
+    </div>
+  </div>
+
+  <div class="chat-tabs">
+    <button class="chat-tab active" onclick="switchChatTab('teachers',this)">👩‍🏫 Преподаватели</button>
+    <button class="chat-tab" onclick="switchChatTab('parents',this)">👨‍👩‍👧‍👦 Родители</button>
+  </div>
+
+  <div class="chat-layout">
+    <!-- Боковая панель контактов -->
+    <div class="chat-sidebar">
+      <div class="content-card" style="padding:16px;">
+        <input class="search-contacts" type="text" id="contactSearch" placeholder="🔍 Поиск..." oninput="filterContacts()">
+        <div id="contactsList" style="max-height:500px;overflow-y:auto;">Загрузка...</div>
+      </div>
+    </div>
+
+    <!-- Основная область чата -->
+    <div class="chat-main">
+      <div class="content-card" style="flex:1;display:flex;flex-direction:column;padding:20px;">
+        <h2 id="chatHeader" style="margin:0 0 12px;">💬 Выберите собеседника</h2>
+
+        <div id="personalChatArea" style="display:none;flex-direction:column;flex:1;">
+          <div class="messages-area" id="personalMessages"></div>
+          <div class="msg-input-area">
+            <input class="msg-input" id="personalMsgInput" type="text" placeholder="Напишите сообщение..." onkeydown="if(event.key==='Enter')sendMessage()">
+            <button onclick="sendMessage()" style="background:var(--accent);color:white;border:none;border-radius:24px;padding:12px 24px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+  requireAuth(['admin']);
+
+  let currentTab = 'teachers';
+  let currentContactId = null;
+  let currentContactName = '';
+  let teachersCache = [];
+  let parentsCache = [];
+  let chatPollInterval = null;
+  let adminId = null;
+
+  async function init() {
+    document.getElementById('personalChatArea').style.display = 'none';
+    const me = await api('/api/auth/me');
+    if (!me) return;
+    adminId = me._id;
+    if (typeof updateTopbarAvatar === 'function') {
+      await updateTopbarAvatar(me);
+    } else {
+      document.getElementById('userAvatar').textContent = me.firstName?.charAt(0) || '?';
+    }
+    await loadContacts();
+    chatPollInterval = setInterval(() => {
+      if (currentContactId) loadMessages();
+    }, 5000);
+  }
+
+  async function switchChatTab(tab, btn) {
+    document.querySelectorAll('.chat-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    currentTab = tab;
+    currentContactId = null;
+    currentContactName = '';
+    document.getElementById('personalChatArea').style.display = 'none';
+    document.getElementById('chatHeader').textContent = tab === 'teachers' ? '💬 Чаты с преподавателями' : '💬 Чаты с родителями';
+    document.getElementById('personalMessages').innerHTML = '';
+    await loadContacts();
+  }
+
+  async function loadContacts() {
+    const container = document.getElementById('contactsList');
+    container.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">Загрузка...</p>';
+
+    if (currentTab === 'teachers') {
+      teachersCache = await api('/api/admin/chat/teachers') || [];
+      renderTeacherContacts(teachersCache);
+    } else {
+      parentsCache = await api('/api/admin/chat/parents') || [];
+      renderParentContacts(parentsCache);
+    }
+  }
+
+  // ===== ПРЕПОДАВАТЕЛИ — красиво с группами =====
+  function renderTeacherContacts(teachers) {
+    const container = document.getElementById('contactsList');
+    if (!teachers.length) {
+      container.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:2.5rem;margin-bottom:8px;">👩‍🏫</div><p style="color:#888;">Нет преподавателей</p></div>';
+      return;
+    }
+
+    // Сортируем: сначала с группами, потом без группы. Внутри по фамилии
+    const withGroup = teachers.filter(t => t.groups?.length > 0).sort((a, b) => (a.lastName || '').localeCompare(b.lastName || ''));
+    const withoutGroup = teachers.filter(t => !t.groups || t.groups.length === 0).sort((a, b) => (a.lastName || '').localeCompare(b.lastName || ''));
+
+    let html = '';
+
+    // Преподаватели с группами
+    if (withGroup.length) {
+      html += `<div class="group-header">👩‍🏫 Преподаватели с группами</div>`;
+      withGroup.forEach(t => {
+        const name = `${t.firstName || ''} ${t.lastName || ''}`.trim() || t.login || 'Преподаватель';
+        const safeName = safeText(name);
+        // Все группы тэгами
+        const groupTags = (t.groupNames || []).map(gn => safeText(gn)).join(', ');
+        const searchStr = safeText(name.toLowerCase() + ' ' + (t.groupNames || []).join(' ').toLowerCase());
+        html += `
+          <div class="contact-item ${currentContactId === t._id ? 'active' : ''}" onclick="openChat('${t._id}','${safeName}')" data-id="${t._id}" data-search="${searchStr}">
+            <div class="contact-avatar">${(t.firstName || 'П')[0].toUpperCase()}</div>
+            <div class="contact-info">
+              <div class="contact-name">${safeName}</div>
+              <div class="contact-group">🏫 ${safeText(groupTags)}</div>
+            </div>
+          </div>`;
+      });
+    }
+
+    // Преподаватели без группы
+    if (withoutGroup.length) {
+      html += `<div class="group-header">📭 Без группы</div>`;
+      withoutGroup.forEach(t => {
+        const name = `${t.firstName || ''} ${t.lastName || ''}`.trim() || t.login || 'Преподаватель';
+        const safeName = safeText(name);
+        const searchStr = safeText(name.toLowerCase());
+        html += `
+          <div class="contact-item ${currentContactId === t._id ? 'active' : ''}" onclick="openChat('${t._id}','${safeName}')" data-id="${t._id}" data-search="${searchStr}">
+            <div class="contact-avatar">${(t.firstName || 'П')[0].toUpperCase()}</div>
+            <div class="contact-info">
+              <div class="contact-name">${safeName}</div>
+              <div class="contact-sub" style="color:#bbb;">Преподаватель без группы</div>
+            </div>
+          </div>`;
+      });
+    }
+
+    container.innerHTML = html;
+  }
+
+  // ===== РОДИТЕЛИ с группировкой по группам детей =====
+  function renderParentContacts(parents) {
+    const container = document.getElementById('contactsList');
+    if (!parents.length) {
+      container.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:2.5rem;margin-bottom:8px;">👨‍👩‍👧‍👦</div><p style="color:#888;">Нет родителей</p></div>';
+      return;
+    }
+
+    // Собираем группы родителей и строим секции
+    // Сервер уже отсортировал: сначала те что с группами, потом без
+    let html = '';
+    let lastGroup = null;
+
+    parents.forEach(p => {
+      const name = `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.login || 'Родитель';
+      const childrenList = p.children || [];
+
+      // Группа для заголовка — первая, или '—'
+      const firstGroup = (p.groups && p.groups[0] && p.groups[0] !== '—') ? p.groups[0] : null;
+      // Все группы тэгами под именем
+      const groupTags = (p.groups || []).filter(g => g && g !== '—').map(g => safeText(g));
+
+      // Заголовок группы при смене
+      const groupLabel = firstGroup ? `🏫 ${safeText(firstGroup)}` : '📭 Без группы';
+      if (groupLabel !== lastGroup) {
+        html += `<div class="group-header">${groupLabel}</div>`;
+        lastGroup = groupLabel;
+      }
+
+      const safeName = safeText(name);
+      const childrenStr = childrenList.map(c => `${c.firstName || ''} ${c.lastName || ''}`.trim()).filter(Boolean).join(', ') || '—';
+      const searchStr = safeText(name.toLowerCase() + ' ' + childrenStr.toLowerCase() + ' ' + (groupTags.join(' ')).toLowerCase());
+
+      html += `
+        <div class="contact-item ${currentContactId === p._id ? 'active' : ''}" onclick="openChat('${p._id}','${safeName}')" data-id="${p._id}" data-search="${searchStr}">
+          <div class="contact-avatar">${(p.firstName || 'Р')[0].toUpperCase()}</div>
+          <div class="contact-info">
+            <div class="contact-name">${safeName}</div>
+            <div class="contact-sub">👶 ${safeText(childrenStr)}</div>
+            ${groupTags.length > 0 ? `<div class="contact-group">🏫 ${groupTags.join(', ')}</div>` : ''}
+          </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+  }
+
+  function filterContacts() {
+    const q = document.getElementById('contactSearch').value.toLowerCase().trim();
+    // Показываем/скрываем контакты, а заголовки групп — только если есть видимые под ними
+    document.querySelectorAll('.contact-item').forEach(el => {
+      const search = (el.dataset.search || '').toLowerCase();
+      el.style.display = q && !search.includes(q) ? 'none' : 'flex';
+    });
+
+    // Показываем заголовки групп, только если после них есть видимые контакты
+    if (q) {
+      document.querySelectorAll('.group-header').forEach(h => {
+        let next = h.nextElementSibling;
+        let hasVisible = false;
+        while (next && next.classList.contains('contact-item')) {
+          if (next.style.display !== 'none') { hasVisible = true; break; }
+          next = next.nextElementSibling;
+        }
+        h.style.display = hasVisible ? 'block' : 'none';
+      });
+    } else {
+      document.querySelectorAll('.group-header').forEach(h => h.style.display = 'block');
+    }
+  }
+
+  // === ЧАТ ===
+  async function openChat(contactId, name) {
+    currentContactId = contactId;
+    currentContactName = name;
+    document.getElementById('chatHeader').textContent = `💬 ${name}`;
+    document.getElementById('personalChatArea').style.display = 'flex';
+
+    document.querySelectorAll('.contact-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.id === contactId);
+    });
+
+    await loadMessages();
+  }
+
+  async function loadMessages() {
+    if (!currentContactId) return;
+    const messages = await api(`/api/admin/chat/${currentContactId}`) || [];
+    renderMessages(messages);
+  }
+
+  function renderMessages(messages) {
+    const container = document.getElementById('personalMessages');
+    if (!messages.length) {
+      container.innerHTML = `<div class="empty-chat"><div class="icon">💬</div><p>Начните общение с ${currentContactName}</p></div>`;
+      return;
+    }
+    container.innerHTML = messages.map(m => {
+      // Сообщение от админа, если studentId совпадает с ID админа
+      const isMine = String(m.studentId) === String(adminId);
+      const senderName = m.userName || (isMine ? 'Вы' : currentContactName);
+      return `
+        <div class="msg ${isMine ? 'mine' : 'theirs'}">
+          <div style="font-weight:700;font-size:0.75rem;margin-bottom:2px;opacity:0.7;">${safeText(senderName)}</div>
+          <div>${safeText(m.text)}</div>
+          <div class="msg-time">${new Date(m.createdAt).toLocaleString('ru', {hour:'2-digit',minute:'2-digit'})}</div>
+        </div>`;
+    }).join('');
+    container.scrollTop = container.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('personalMsgInput');
+    const text = input.value.trim();
+    if (!text || !currentContactId) return;
+    input.value = '';
+
+    const res = await api(`/api/admin/chat/${currentContactId}`, {
+      method: 'POST',
+      body: JSON.stringify({ text })
+    });
+
+    if (res) {
+      playSound('ding');
+      await loadMessages();
+    }
+  }
+
+  function safeText(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
+  init();
+</script>
+  <script src="../../js/theme-manager.js"></script>
+</body>
+</html>

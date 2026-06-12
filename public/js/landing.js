@@ -56,6 +56,28 @@ function toggleFormBtn(checkId, btnId) {
   btn.classList.toggle('ready', document.getElementById(checkId).checked);
 }
 
+// ===== АВТОМАТИЧЕСКОЕ ПОЯВЛЕНИЕ ПЕРСОНАЖЕЙ =====
+function animateCharacters() {
+  const dino = document.getElementById('dino');
+  const cat = document.getElementById('cat-hero');
+  
+  if (dino) {
+    dino.style.transition = 'left 1.2s ease-out, opacity 0.8s ease';
+    setTimeout(() => {
+      dino.style.left = Math.min(window.innerWidth / 4, 200) + 'px';
+      dino.style.opacity = '1';
+    }, 300);
+  }
+  
+  if (cat) {
+    cat.style.transition = 'bottom 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.8s ease';
+    setTimeout(() => {
+      cat.style.bottom = '40px';
+      cat.style.opacity = '1';
+    }, 800);
+  }
+}
+
 // ===== СКРОЛЛ: ПЕРСОНАЖИ + АНИМАЦИИ =====
 window.addEventListener('scroll', () => {
   const scrolled = window.scrollY;
@@ -65,25 +87,17 @@ window.addEventListener('scroll', () => {
   // Персонажи работают только пока hero виден
   const heroVisible = scrolled < heroHeight;
 
-  // Динозавр выезжает слева при скролле, только в пределах hero
+  // Динозавр двигается при скролле
   const dino = document.getElementById('dino');
   if (heroVisible && scrolled > 100) {
     dino.style.left = Math.min(scrolled / 4 - 50, window.innerWidth / 2 - 220) + 'px';
-    dino.style.opacity = '1';
-  } else {
-    dino.style.left = '-300px';
-    dino.style.opacity = '0';
   }
 
-  // Кот вылетает снизу справа, только в пределах hero
+  // Кот поднимается при скролле
   const cat = document.getElementById('cat-hero');
   if (heroVisible && scrolled > 100) {
     const rise = Math.min((scrolled - 100) / 3, heroHeight * 0.6);
-    cat.style.bottom = rise + 'px';
-    cat.style.opacity = '1';
-  } else {
-    cat.style.bottom = '-200px';
-    cat.style.opacity = '0';
+    cat.style.bottom = Math.max(rise, 40) + 'px';
   }
 
   // Анимации при появлении в viewport
@@ -239,6 +253,19 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => playLandingSound('click'));
   });
 
+  // Анимация смайликов при загрузке - сразу
+  setTimeout(() => {
+    spawnStars(20);
+    playLandingSound('success');
+  }, 100);
+  
+  // Автоматическое появление персонажей - сразу
+  setTimeout(() => {
+    animateCharacters();
+    playLandingSound('open');
+  }, 300);
+
+  // Анимация элементов при появлении
   setTimeout(() => {
     document.querySelectorAll('[data-anim]').forEach(el => {
       const rect = el.getBoundingClientRect();

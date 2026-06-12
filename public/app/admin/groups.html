@@ -17,9 +17,11 @@
   <a href="courses.html"><span class="icon">📚</span> Курсы</a>
   <a href="payments.html"><span class="icon">💳</span> Оплаты</a>
   <a href="reviews.html"><span class="icon">⭐</span> Отзывы</a>
-  <a href="tickets.html"><span class="icon">🎫</span> Тикеты</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Билетики</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
+  <a href="shop-admin.html"><span class="icon">🎪</span> Магазин</a>
   <div class="sidebar-bottom">
-    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a><a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
   </div>
 </aside>
 
@@ -30,7 +32,7 @@
     <div class="topbar-right">
       <button class="sound-btn" id="soundBtn">🔊</button>
       <button class="notif-btn" onclick="toggleNotificationsPanel()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
-      <div class="user-avatar">A</div>
+      <div class="user-avatar" id="userAvatar">A</div>
     </div>
   </div>
 
@@ -46,9 +48,12 @@
       </select>
     </div>
     <div style="margin-top:12px;">
-      <label for="gStudents" style="display:block;margin-bottom:8px;font-weight:700;">Ученики (можно выбрать несколько)</label>
-      <select id="gStudents" multiple style="width:100%;min-height:160px;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;"></select>
-      <small style="color:#888;display:block;margin-top:6px;">Выбранные ученики автоматически будут добавлены в группу</small>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <label style="font-weight:700;">👨‍🎓 Выбор учеников</label>
+        <span id="selectedCount" style="color:var(--accent);font-weight:700;font-size:0.9rem;">Выбрано: 0 / 10</span>
+      </div>
+      <div id="studentPicker" style="max-height:200px;overflow-y:auto;border:2px solid #eee;border-radius:16px;padding:8px;background:white;"></div>
+      <small style="color:#888;display:block;margin-top:6px;">Выберите несколько учеников (максимум 10). Отметьте галочками.</small>
     </div>
     <button onclick="createGroup()" class="btn-accent" style="margin-top:12px;border-radius:20px;padding:10px 28px;">Создать группу</button>
   </div>
@@ -71,8 +76,11 @@
       </select>
     </div>
     <div style="margin-top:12px;">
-      <label for="editGroupStudents" style="display:block;margin-bottom:8px;font-weight:700;">Ученики группы</label>
-      <select id="editGroupStudents" multiple style="width:100%;min-height:180px;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;"></select>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <label style="font-weight:700;">👨‍🎓 Ученики группы</label>
+        <span id="editSelectedCount" style="color:var(--accent);font-weight:700;font-size:0.9rem;">Выбрано: 0 / 10</span>
+      </div>
+      <div id="editGroupStudents" style="max-height:220px;overflow-y:auto;border:2px solid #eee;border-radius:16px;padding:8px;background:white;"></div>
       <small style="color:#888;display:block;margin-top:6px;">Сохранение заменит состав группы на выбранных учеников</small>
     </div>
     <button type="button" onclick="saveGroup()" class="btn-accent" style="margin-top:12px;border-radius:20px;padding:10px 28px;">Сохранить изменения</button>
@@ -93,6 +101,13 @@
   let studentsCache = [];
   let groupsCache = [];
 
+  function safeText(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
   function fillSelect(select, items, formatter) {
     if (!select) return;
     const placeholder = select.querySelector('option');
@@ -105,25 +120,108 @@
     });
   }
 
-  function fillMultiSelect(select, items, formatter, selectedIds = []) {
-    if (!select) return;
-    const placeholder = select.querySelector('option');
-    select.innerHTML = placeholder ? placeholder.outerHTML : '';
+  // === КРАСИВЫЙ ПИКЕР УЧЕНИКОВ С ЧЕКБОКСАМИ ===
+  function buildStudentPicker(containerId, selectedIds = []) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
     const selectedSet = new Set(selectedIds.map(id => String(id)));
-    items?.forEach(item => {
-      const option = document.createElement('option');
-      option.value = item._id;
-      option.textContent = formatter(item);
-      option.selected = selectedSet.has(String(item._id));
-      select.appendChild(option);
+    const max = 10;
+    container.innerHTML = '';
+
+    studentsCache.forEach(s => {
+      const name = `${s.lastName || ''} ${s.firstName || ''}`.trim() || s.login || 'Ученик';
+      const login = s.login || '';
+      const isChecked = selectedSet.has(String(s._id));
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:10px;cursor:pointer;transition:0.2s;';
+      div.className = 'student-pick-item';
+      if (isChecked) div.style.background = 'rgba(153,0,255,0.1)';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = isChecked;
+      cb.style.cssText = 'width:18px;height:18px;accent-color:#9900FF;cursor:pointer;flex-shrink:0;';
+      cb.dataset.studentId = s._id;
+      cb.dataset.containerId = containerId;
+
+      const label = document.createElement('span');
+      label.style.cssText = 'font-size:0.85rem;font-weight:600;flex:1;';
+      label.textContent = name;
+
+      const sub = document.createElement('span');
+      sub.style.cssText = 'font-size:0.72rem;color:#888;';
+      sub.textContent = `🎫 ${s.tickets || 0} XP`;
+
+      div.appendChild(cb);
+      div.appendChild(label);
+      div.appendChild(sub);
+
+      // Клик по всей строке
+      div.addEventListener('click', (e) => {
+        if (e.target === cb) return;
+        cb.checked = !cb.checked;
+        updatePickerState(containerId);
+      });
+
+      cb.addEventListener('change', () => updatePickerState(containerId));
+
+      container.appendChild(div);
+    });
+
+    updatePickerState(containerId);
+  }
+
+  function updatePickerState(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+    const checked = Array.from(checkboxes).filter(cb => cb.checked);
+    const max = 10;
+
+    // Определяем, какой счётчик обновлять
+    let countEl;
+    if (containerId === 'studentPicker') {
+      countEl = document.getElementById('selectedCount');
+    } else {
+      countEl = document.getElementById('editSelectedCount');
+    }
+
+    // Если превышает лимит — снимаем последние
+    if (checked.length > max) {
+      showToast(`Максимум ${max} учеников!`, 'error');
+      for (let i = max; i < checked.length; i++) {
+        checked[i].checked = false;
+      }
+    }
+
+    const finalChecked = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'));
+    const count = finalChecked.length;
+
+    if (countEl) {
+      countEl.textContent = `Выбрано: ${count} / ${max}`;
+      countEl.style.color = count === max ? '#cc0000' : count > 0 ? 'var(--accent)' : '#888';
+    }
+
+    // Подсветка выбранных строк
+    container.querySelectorAll('.student-pick-item').forEach(div => {
+      const cb = div.querySelector('input[type="checkbox"]');
+      div.style.background = cb && cb.checked ? 'rgba(153,0,255,0.1)' : 'transparent';
     });
   }
 
-  function getStudentIdsFromGroup(group) {
-    return (group.students || []).map(student => student._id || student);
+  function getSelectedStudentIds(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return [];
+    return Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+      .map(cb => cb.dataset.studentId)
+      .filter(Boolean);
   }
 
   async function init() {
+    const me = await api("/api/auth/me");
+    if (me && typeof updateTopbarAvatar === "function") {
+      await updateTopbarAvatar(me);
+    }
     const [teachers, courses, students] = await Promise.all([
       api('/api/admin/users?role=teacher'),
       api('/api/courses'),
@@ -135,16 +233,15 @@
     studentsCache = students || [];
 
     const teacherLabel = t => `${t.lastName || ''} ${t.firstName || ''}`.trim() || t.login || 'Преподаватель';
-    const studentLabel = s => `${s.lastName || ''} ${s.firstName || ''}`.trim() || s.login || 'Ученик';
     const courseLabel = c => c.title || 'Без названия';
 
     fillSelect(document.getElementById('gTeacher'), teachersCache, teacherLabel);
     fillSelect(document.getElementById('gCourse'), coursesCache, courseLabel);
-    fillMultiSelect(document.getElementById('gStudents'), studentsCache, studentLabel);
-
     fillSelect(document.getElementById('editGroupTeacher'), teachersCache, teacherLabel);
     fillSelect(document.getElementById('editGroupCourse'), coursesCache, courseLabel);
-    fillMultiSelect(document.getElementById('editGroupStudents'), studentsCache, studentLabel);
+
+    // Строим красивый пикер учеников
+    buildStudentPicker('studentPicker');
 
     await loadGroups();
   }
@@ -152,7 +249,6 @@
   async function loadGroups() {
     const groups = await api('/api/admin/groups') || [];
     groupsCache = groups;
-    window._groupsCache = groupsCache;
 
     const container = document.getElementById('groupsList');
 
@@ -161,78 +257,88 @@
       return;
     }
 
-    container.innerHTML = groups.map(g => `
-      <div class="content-card">
+    container.innerHTML = groups.map(g => {
+      const teacherName = `${g.teacherId?.lastName || ''} ${g.teacherId?.firstName || '—'}`.trim();
+      const courseTitle = g.courseId?.title || null;
+      const safeName = safeText(g.name);
+      return `
+      <div class="content-card" data-group-id="${g._id}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
           <div>
-            <h2 style="margin:0;">🏫 ${g.name}</h2>
+            <h2 style="margin:0;">🏫 ${safeName}</h2>
             <p style="color:#888;font-size:0.9rem;margin-top:4px;">
-              Преподаватель: <b>${g.teacherId?.lastName || ''} ${g.teacherId?.firstName || '—'}</b>
-              ${g.courseId ? `· Курс: <b>${g.courseId.title}</b>` : ''}
+              Преподаватель: <b>${safeText(teacherName)}</b>
+              ${courseTitle ? `· Курс: <b>${safeText(courseTitle)}</b>` : ''}
             </p>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <span class="badge badge-purple">${g.students?.length || 0} учеников</span>
             <button type="button" onclick="openEditGroup('${g._id}')" style="background:var(--bg);border:none;border-radius:20px;padding:8px 14px;font-weight:700;cursor:pointer;font-family:inherit;">✏️ Редактировать</button>
-            <button type="button" onclick="removeGroup('${g._id}','${(g.name || '').replace(/'/g, "\\'")}')" style="background:#ffe8e8;color:#cc0000;border:none;border-radius:20px;padding:8px 14px;font-weight:700;cursor:pointer;font-family:inherit;">🗑️ Удалить</button>
+            <button type="button" onclick="removeGroup('${g._id}','${safeName.replace(/'/g, "\\'")}')" style="background:#ffe8e8;color:#cc0000;border:none;border-radius:20px;padding:8px 14px;font-weight:700;cursor:pointer;font-family:inherit;">🗑️ Удалить</button>
           </div>
         </div>
         ${g.students?.length ? `
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            ${g.students.map(s => `
-              <div style="background:var(--bg);border-radius:12px;padding:6px 14px;font-size:0.85rem;font-weight:600;">
-                ${s.lastName || ''} ${s.firstName || ''}
-                <span style="color:var(--accent);margin-left:6px;">${s.xp || 0} XP</span>
-              </div>
-            `).join('')}
+            ${g.students.map(s => {
+              const sName = safeText(`${s.lastName || ''} ${s.firstName || ''}`.trim() || 'Ученик');
+              return `<div style="background:var(--bg);border-radius:12px;padding:6px 14px;font-size:0.85rem;font-weight:600;display:flex;align-items:center;gap:6px;">
+                ${sName} <span style="color:var(--accent);">${s.xp || 0} XP</span>
+                <button onclick="event.stopPropagation();removeStudentFromGroup('${g._id}','${s._id}','${sName.replace(/'/g, "\\'")}')" title="Удалить из группы" style="background:none;border:none;cursor:pointer;color:#cc0000;font-size:0.8rem;padding:2px;">✕</button>
+              </div>`;
+            }).join('')}
           </div>
         ` : '<p style="color:#888;font-size:0.9rem;">Учеников пока нет</p>'}
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   }
 
   async function createGroup() {
     const name = document.getElementById('gName').value.trim();
     const teacherId = document.getElementById('gTeacher').value;
     const courseId = document.getElementById('gCourse').value;
-    const studentIds = Array.from(document.getElementById('gStudents').selectedOptions).map(option => option.value);
+    const studentIds = getSelectedStudentIds('studentPicker');
 
-    if (!name || !teacherId) {
-      showToast('Заполните название и преподавателя', 'error');
-      return;
-    }
+    if (!name) { showToast('Введите название группы', 'error'); return; }
+    if (!teacherId) { showToast('Выберите преподавателя', 'error'); return; }
+    if (studentIds.length > 10) { showToast('Максимум 10 учеников', 'error'); return; }
+    if (studentIds.length === 0 && !confirm('В группу не добавлен ученик. Создать пустую группу?')) return;
 
-    const res = await api('/api/admin/groups', {
-      method: 'POST',
-      body: JSON.stringify({ name, teacherId, courseId: courseId || undefined, studentIds })
-    });
+    try {
+      const res = await api('/api/admin/groups', {
+        method: 'POST',
+        body: JSON.stringify({ name, teacherId, courseId: courseId || undefined, studentIds })
+      });
 
-    if (res) {
-      showToast('Группа создана! 🏫');
-      playSound('success');
-      spawnStars(8);
-      document.getElementById('gName').value = '';
-      Array.from(document.getElementById('gStudents').options).forEach(option => option.selected = false);
-      loadGroups();
+      if (res && res._id) {
+        showToast(`Группа "${name}" создана! (${studentIds.length} уч.) 🏫`);
+        playSound('success');
+        launchConfetti();
+
+        document.getElementById('gName').value = '';
+        document.getElementById('gTeacher').value = '';
+        document.getElementById('gCourse').value = '';
+        buildStudentPicker('studentPicker');
+        await loadGroups();
+      } else {
+        showToast('Ошибка создания группы', 'error');
+      }
+    } catch (error) {
+      showToast(`Ошибка: ${error.message}`, 'error');
     }
   }
 
   function openEditGroup(groupId) {
     const group = groupsCache.find(g => String(g._id) === String(groupId));
-    if (!group) return;
+    if (!group) { showToast('Группа не найдена', 'error'); return; }
 
     document.getElementById('editGroupId').value = group._id;
     document.getElementById('editGroupName').value = group.name || '';
     document.getElementById('editGroupTeacher').value = group.teacherId?._id || group.teacherId || '';
     document.getElementById('editGroupCourse').value = group.courseId?._id || group.courseId || '';
 
-    const selectedStudentIds = getStudentIdsFromGroup(group);
-    fillMultiSelect(
-      document.getElementById('editGroupStudents'),
-      studentsCache,
-      s => `${s.lastName || ''} ${s.firstName || ''}`.trim() || s.login || 'Ученик',
-      selectedStudentIds
-    );
+    // Строим пикер с предвыбранными учениками
+    const selectedIds = (group.students || []).map(s => s._id || s);
+    buildStudentPicker('editGroupStudents', selectedIds);
 
     document.getElementById('editGroupCard').style.display = 'block';
     document.getElementById('editGroupCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -241,6 +347,9 @@
   function closeEditGroup() {
     document.getElementById('editGroupCard').style.display = 'none';
     document.getElementById('editGroupId').value = '';
+    document.getElementById('editGroupName').value = '';
+    document.getElementById('editGroupTeacher').value = '';
+    document.getElementById('editGroupCourse').value = '';
   }
 
   async function saveGroup() {
@@ -248,40 +357,71 @@
     const name = document.getElementById('editGroupName').value.trim();
     const teacherId = document.getElementById('editGroupTeacher').value;
     const courseId = document.getElementById('editGroupCourse').value;
-    const studentIds = Array.from(document.getElementById('editGroupStudents').selectedOptions).map(option => option.value);
+    const studentIds = getSelectedStudentIds('editGroupStudents');
 
     if (!id || !name || !teacherId) {
       showToast('Заполните название и преподавателя', 'error');
       return;
     }
+    if (studentIds.length > 10) {
+      showToast('Максимум 10 учеников', 'error');
+      return;
+    }
 
-    const res = await api(`/api/admin/groups/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ name, teacherId, courseId: courseId || undefined, studentIds })
-    });
+    try {
+      const res = await api(`/api/admin/groups/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name, teacherId, courseId: courseId || undefined, studentIds })
+      });
 
-    if (res) {
-      showToast('Группа обновлена ✅');
-      playSound('success');
-      spawnStars(8);
-      closeEditGroup();
-      loadGroups();
+      if (res && res._id) {
+        showToast(`Группа "${name}" обновлена! ✅`);
+        playSound('success');
+        closeEditGroup();
+        await loadGroups();
+      } else {
+        showToast('Ошибка обновления группы', 'error');
+      }
+    } catch (error) {
+      showToast(`Ошибка: ${error.message}`, 'error');
     }
   }
 
   async function removeGroup(id, name) {
     if (!confirm(`Удалить группу «${name}»? Ученики будут отвязаны от группы.`)) return;
-
     const res = await api(`/api/admin/groups/${id}`, { method: 'DELETE' });
     if (res) {
       showToast('Группа удалена 🗑️');
       playSound('close');
       if (document.getElementById('editGroupId').value === id) closeEditGroup();
-      loadGroups();
+      await loadGroups();
+    }
+  }
+
+  // === УДАЛИТЬ УЧЕНИКА ИЗ ГРУППЫ ===
+  async function removeStudentFromGroup(groupId, studentId, studentName) {
+    if (!confirm(`Удалить ученика «${studentName}» из группы?`)) return;
+    
+    const res = await api(`/api/admin/groups/${groupId}/students/${studentId}`, { method: 'DELETE' });
+    if (res && res._id) {
+      showToast(`Ученик «${studentName}» удалён из группы ✅`);
+      playSound('close');
+      await loadGroups();
+      // Если редактор открыт для этой же группы, обновляем его
+      if (document.getElementById('editGroupId').value === groupId) {
+        const group = groupsCache.find(g => String(g._id) === String(groupId));
+        if (group) {
+          const selectedIds = (group.students || []).map(s => s._id || s);
+          buildStudentPicker('editGroupStudents', selectedIds);
+        }
+      }
+    } else {
+      showToast('Ошибка удаления ученика', 'error');
     }
   }
 
   init();
 </script>
+  <script src="../../js/theme-manager.js"></script>
 </body>
 </html>

@@ -10,12 +10,18 @@
 </head>
 <body>
 <aside class="sidebar">
-  <div class="sidebar-logo"><img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'"><span>IT-MANIA</span></div>
+  <div class="sidebar-logo">
+    <img src="../../images/star.gif?v=3" alt="IT-MANIA" onerror="this.onerror=null; this.onerror=null; this.src='../../images/star.png'">
+    <span>IT-MANIA</span>
+  </div>
   <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
   <a href="check.html"><span class="icon">✅</span> Проверка заданий</a>
   <a href="lessons-editor.html" class="active"><span class="icon">✏️</span> Конструктор уроков</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
   <a href="group.html"><span class="icon">👥</span> Моя группа</a>
-  <div class="sidebar-bottom">
+   <a href="parents.html" ><span class="icon">👨‍👩‍👧‍👦</span> Родители</a>
+    <div class="sidebar-bottom">
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a>
     <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
   </div>
 </aside>
@@ -41,6 +47,9 @@
         <div id="lessonsList"></div>
         <button onclick="newLesson()" class="btn-accent" style="width:100%;margin-top:12px;border-radius:20px;padding:10px;">
           + Новый урок
+        </button>
+        <button onclick="showCreateModule()" style="width:100%;margin-top:8px;background:var(--bg);border:2px dashed var(--accent);color:var(--accent);border-radius:20px;padding:10px;font-weight:700;cursor:pointer;font-family:inherit;">
+          📦 + Создать модуль
         </button>
       </div>
     </div>
@@ -137,7 +146,11 @@
 
   async function init() {
     const user = await api('/api/auth/me');
-    if (user) document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+    if (user && typeof updateTopbarAvatar === 'function') {
+      await updateTopbarAvatar(user);
+    } else if (user) {
+      document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+    }
 
     const courses = await api('/api/courses') || [];
     const sel = document.getElementById('moduleSelect');
@@ -243,9 +256,79 @@
     }
   }
 
+  // === ДИАЛОГ СОЗДАНИЯ МОДУЛЯ ===
+  function showCreateModule() {
+    // Создаём модальное окно
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1000;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = `
+      <div style="background:white;border-radius:24px;padding:30px;width:420px;max-width:90vw;box-shadow:0 16px 48px rgba(0,0,0,0.2);">
+        <h2 style="margin:0 0 20px;">📦 Создать модуль</h2>
+        <label style="font-weight:700;font-size:0.9rem;display:block;margin-bottom:6px;">Название модуля</label>
+        <input id="newModuleTitle" type="text" placeholder="Например: Основы Python"
+          style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:16px;">
+        <label style="font-weight:700;font-size:0.9rem;display:block;margin-bottom:6px;">Курс</label>
+        <select id="newModuleCourse"
+          style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:20px;">
+          <option value="">Выберите курс</option>
+        </select>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button onclick="this.closest('div[style]').parentElement.remove()"
+            style="background:var(--bg);border:none;border-radius:20px;padding:10px 24px;font-weight:700;cursor:pointer;font-family:inherit;">Отмена</button>
+          <button onclick="createModuleFromDialog(this)"
+            style="background:var(--accent);color:white;border:none;border-radius:20px;padding:10px 24px;font-weight:700;cursor:pointer;font-family:inherit;">✅ Создать</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    // Загружаем курсы
+    api('/api/courses').then(courses => {
+      const sel = overlay.querySelector('#newModuleCourse');
+      if (courses) {
+        courses.forEach(c => {
+          const o = document.createElement('option');
+          o.value = c._id;
+          o.textContent = c.title;
+          sel.appendChild(o);
+        });
+      }
+    });
+  }
+
+  async function createModuleFromDialog(btn) {
+    const overlay = btn.closest('div[style]').parentElement;
+    const title = overlay.querySelector('#newModuleTitle').value.trim();
+    const courseId = overlay.querySelector('#newModuleCourse').value;
+    if (!title) { showToast('Введите название модуля', 'error'); return; }
+    if (!courseId) { showToast('Выберите курс', 'error'); return; }
+
+    const res = await api('/api/modules', {
+      method: 'POST',
+      body: JSON.stringify({ title, courseId })
+    });
+
+    if (res) {
+      showToast(`Модуль "${title}" создан! 🎉`);
+      playSound('success');
+      overlay.remove();
+      // Перезагружаем список модулей
+      const sel = document.getElementById('moduleSelect');
+      const courses = await api('/api/courses') || [];
+      sel.innerHTML = '<option value="">Выберите модуль</option>';
+      for (const c of courses) {
+        const modules = await api(`/api/courses/${c._id}/modules`) || [];
+        modules.forEach(m => {
+          const o = document.createElement('option');
+          o.value = m._id;
+          o.textContent = `${c.title} → ${m.title}`;
+          sel.appendChild(o);
+        });
+      }
+    }
+  }
+
   init();
 </script>
+  <script src="../../js/theme-manager.js"></script>
 </body>
 </html>
-
-

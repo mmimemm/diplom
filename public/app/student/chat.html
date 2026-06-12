@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Чаты — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    .chat-tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .chat-tab {
+      padding: 10px 24px;
+      border-radius: 30px;
+      border: 2px solid #1a1a2e;
+      background: white;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .chat-tab:hover { background: var(--bg); }
+    .chat-tab.active { background: #1a1a2e; color: white; }
+    .chat-tab .tab-icon { margin-right: 6px; }
+
+    .chat-info {
+      color: #666;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+
+    .chat-messages {
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 300px;
+      max-height: calc(100vh - 340px);
+      border: 2px solid #1a1a2e;
+      border-radius: 16px;
+      padding: 16px;
+      background: #fafafa;
+      margin-bottom: 12px;
+    }
+
+    .chat-message {
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .chat-message.mine {
+      background: #1a1a2e;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .chat-message.theirs {
+      background: var(--bg);
+      color: #1a1a2e;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    .chat-message .msg-header {
+      font-size: 0.75rem;
+      opacity: 0.6;
+      margin-bottom: 4px;
+    }
+    .chat-message .msg-text {
+      word-break: break-word;
+      line-height: 1.4;
+    }
+
+    .chat-form {
+      display: flex;
+      gap: 8px;
+    }
+    .chat-form input {
+      flex: 1;
+      padding: 14px 20px;
+      border-radius: 30px;
+      border: 2px solid #1a1a2e;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .chat-form input:focus { border-color: var(--accent); }
+    .chat-form button {
+      padding: 14px 28px;
+      border-radius: 30px;
+      background: #1a1a2e;
+      color: white;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: background 0.2s;
+    }
+    .chat-form button:hover { background: var(--accent); }
+
+    .chat-placeholder {
+      color: #888;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    @media (max-width: 768px) {
+      .chat-messages { max-height: calc(100vh - 340px); }
+      .chat-message { max-width: 85%; }
+    }
+
+    @media (max-width: 480px) {
+      .chat-tab { padding: 8px 16px; font-size: 0.85rem; }
+      .chat-form input { padding: 12px 16px; font-size: 0.9rem; }
+      .chat-form button { padding: 12px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'">
+    <span>IT-MANIA</span>
+  </div>
+  <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
+  <a href="lessons.html" ><span class="icon">📚</span> Мои уроки</a>
+  <a href="progress-map.html"><span class="icon">🗺️</span> Карта прогресса</a>
+  <a href="submissions.html"><span class="icon">📋</span> Задания</a>
+  <a href="chat.html" class="active"><span class="icon">💬</span> Чаты</a>
+  <a href="sandbox.html"><span class="icon">🧪</span> Песочница</a>
+  <a href="shop.html"><span class="icon">🎪</span> Магазин</a>
+  <a href="leaderboard.html"><span class="icon">🏆</span> Рейтинг</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Обращения</a>
+  <div class="sidebar-bottom">
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a>
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle">☰</button>
+    <h1>💬 Чаты</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <button class="notif-btn">🔔 <span class="notif-badge" id="notifBadge"></span></button>
+      <div class="user-avatar" id="userAvatar" onclick="location.href='profile.html'" title="Профиль">?</div>
+    </div>
+  </div>
+
+  <div class="chat-tabs">
+    <button class="chat-tab active" data-tab="teacher">
+      <span class="tab-icon">👨‍🏫</span> Преподаватель
+    </button>
+    <button class="chat-tab" data-tab="group">
+      <span class="tab-icon">👥</span> Группа
+    </button>
+  </div>
+
+  <div class="chat-info" id="chatInfo"></div>
+
+  <div class="chat-messages" id="messagesContainer">
+    <div class="chat-placeholder">Загрузка...</div>
+  </div>
+
+  <form class="chat-form" id="chatForm">
+    <input type="text" id="msgInput" placeholder="Введите сообщение..." required>
+    <button type="submit">📤</button>
+  </form>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+(async function() {
+  if (!requireAuth(['student'])) return;
+
+  // ---- STATE ----
+  let activeTab = 'teacher';
+  let currentUser = null;
+  let teacherName = 'Преподаватель';
+  let groupName = '';
+  let lastMessageIds = { teacher: '', group: '' };
+
+  // ---- DOM ----
+  const messagesEl = document.getElementById('messagesContainer');
+  const chatInfoEl = document.getElementById('chatInfo');
+  const form = document.getElementById('chatForm');
+  const input = document.getElementById('msgInput');
+  const tabBtns = document.querySelectorAll('.chat-tab');
+  const avatar = document.getElementById('userAvatar');
+
+  // ---- INIT ----
+  async function init() {
+    try {
+      const user = await api('/api/auth/me');
+      if (!user) {
+        messagesEl.innerHTML = '<div class="chat-placeholder" style="color:#c00;">Не удалось загрузить профиль</div>';
+        return;
+      }
+      currentUser = user;
+
+      if (typeof updateTopbarAvatar === 'function') {
+        await updateTopbarAvatar(user);
+      } else if (avatar) {
+        avatar.textContent = (user.firstName || '?')[0].toUpperCase();
+      }
+
+      // Имя преподавателя
+      if (user.teacherId && typeof user.teacherId === 'object') {
+        teacherName = [user.teacherId.firstName, user.teacherId.lastName].filter(Boolean).join(' ') || 'Преподаватель';
+      }
+
+      // Название группы
+      if (user.groupId && typeof user.groupId === 'object') {
+        groupName = user.groupId.name || '';
+      }
+
+      updateChatInfo();
+      loadChat(true);
+    } catch (err) {
+      console.error('Chat init error:', err);
+      messagesEl.innerHTML = '<div class="chat-placeholder" style="color:#c00;">Ошибка загрузки</div>';
+    }
+  }
+
+  function updateChatInfo() {
+    if (activeTab === 'teacher') {
+      chatInfoEl.textContent = '👨‍🏫 Чат с преподавателем: ' + teacherName;
+    } else {
+      chatInfoEl.textContent = '👥 Групповой чат: ' + (groupName || 'Группа');
+    }
+  }
+
+  // ---- LOAD MESSAGES ----
+  async function loadChat(silent) {
+    if (!silent) {
+      messagesEl.innerHTML = '<div class="chat-placeholder">Загрузка...</div>';
+    }
+
+    try {
+      const endpoint = activeTab === 'teacher'
+        ? '/api/my-teacher-chat'
+        : `/api/group-chat/${currentUser.groupId?._id || currentUser.groupId}`;
+
+      const data = await api(endpoint);
+
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        if (!silent) {
+          messagesEl.innerHTML = '<div class="chat-placeholder">Сообщений пока нет. Напишите первое!</div>';
+        }
+        return;
+      }
+
+      const lastId = lastMessageIds[activeTab];
+      let lastIdx = -1;
+      if (lastId) {
+        lastIdx = data.findIndex(m => m._id === lastId);
+      }
+
+      const newMsgs = lastIdx >= 0 ? data.slice(lastIdx + 1) : data;
+
+      if (newMsgs.length === 0 && lastId) return;
+
+      if (lastIdx < 0 || !silent) {
+        renderMessages(data);
+      } else if (newMsgs.length > 0) {
+        appendMessages(newMsgs);
+      }
+
+      if (data.length > 0) {
+        lastMessageIds[activeTab] = data[data.length - 1]._id;
+      }
+
+      scrollToBottom();
+    } catch (err) {
+      console.error('Load chat error:', err);
+      if (!silent) messagesEl.innerHTML = '<div class="chat-placeholder" style="color:#c00;">Ошибка загрузки сообщений</div>';
+    }
+  }
+
+  function renderMessages(msgs) {
+    if (!msgs || msgs.length === 0) {
+      messagesEl.innerHTML = '<div class="chat-placeholder">Сообщений пока нет. Напишите первое!</div>';
+      return;
+    }
+
+    const userOwnId = currentUser._id || currentUser.id;
+    messagesEl.innerHTML = msgs.map(m => {
+      const msgUserId = m.user?.userId || m.userId || m.user?._id || m.user;
+      const isMine = msgUserId === userOwnId || (m.from === 'student' && String(m.studentId) === String(userOwnId));
+      const senderName = isMine ? 'Вы' : safeText(m.user?.firstName || m.userName || m.user?.login || '?');
+      const cls = isMine ? 'mine' : 'theirs';
+      const time = new Date(m.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+
+      return `<div class="chat-message ${cls}">
+        <div class="msg-header">${senderName} · ${time}</div>
+        <div class="msg-text">${escapeHtml(m.text || '')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function appendMessages(msgs) {
+    if (!msgs || msgs.length === 0) return;
+
+    // Убираем плейсхолдер если есть
+    const placeholder = messagesEl.querySelector('.chat-placeholder');
+    if (placeholder) placeholder.remove();
+
+    const userOwnId = currentUser._id || currentUser.id;
+
+    msgs.forEach(m => {
+      const msgUserId = m.user?.userId || m.userId || m.user?._id || m.user;
+      const isMine = msgUserId === userOwnId || (m.from === 'student' && String(m.studentId) === String(userOwnId));
+      const senderName = isMine ? 'Вы' : safeText(m.user?.firstName || m.userName || m.user?.login || '?');
+      const cls = isMine ? 'mine' : 'theirs';
+      const time = new Date(m.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+
+      const div = document.createElement('div');
+      div.className = `chat-message ${cls}`;
+
+      const header = document.createElement('div');
+      header.className = 'msg-header';
+      header.textContent = senderName + ' · ' + time;
+      div.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'msg-text';
+      body.textContent = m.text || '';
+      div.appendChild(body);
+
+      messagesEl.appendChild(div);
+    });
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function safeText(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function scrollToBottom() {
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  // ---- SEND ----
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.disabled = true;
+    try {
+      const endpoint = activeTab === 'teacher'
+        ? '/api/my-teacher-chat'
+        : `/api/group-chat/${currentUser.groupId?._id || currentUser.groupId}`;
+
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify({ text })
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        showToast(err.error || 'Ошибка отправки', 'error');
+        return;
+      }
+
+      input.value = '';
+      playSound('success');
+      lastMessageIds[activeTab] = '';
+      await loadChat(false);
+    } catch (err) {
+      console.error('Send error:', err);
+      showToast('Ошибка соединения', 'error');
+    } finally {
+      input.disabled = false;
+      input.focus();
+    }
+  });
+
+  // ---- TAB SWITCH ----
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const tab = this.dataset.tab;
+      if (tab === activeTab) return;
+      activeTab = tab;
+      tabBtns.forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      updateChatInfo();
+      messagesEl.innerHTML = '<div class="chat-placeholder">Загрузка...</div>';
+      lastMessageIds[activeTab] = '';
+      loadChat(false);
+      playSound('swipe');
+    });
+  });
+
+  // ---- AUTO-REFRESH ----
+  setInterval(() => loadChat(true), 5000);
+
+  // ---- START ----
+  await init();
+})();
+</script>
+
+  <script src="../../js/theme-manager.js"></script>
+</body>
+</html>

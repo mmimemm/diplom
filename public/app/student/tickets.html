@@ -9,14 +9,19 @@
 </head>
 <body>
 <aside class="sidebar">
-  <div class="sidebar-logo"><img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'"><span>IT-MANIA</span></div>
+  <div class="sidebar-logo">
+    <img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'">
+    <span>IT-MANIA</span>
+  </div>
   <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
   <a href="lessons.html"><span class="icon">📚</span> Мои уроки</a>
   <a href="progress-map.html"><span class="icon">🗺️</span> Карта прогресса</a>
+  <a href="submissions.html"><span class="icon">📋</span> Задания</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
   <a href="sandbox.html"><span class="icon">🧪</span> Песочница</a>
   <a href="shop.html"><span class="icon">🎪</span> Магазин</a>
   <a href="leaderboard.html"><span class="icon">🏆</span> Рейтинг</a>
-  <a href="tickets.html" class="active"><span class="icon">🎫</span> Мои тикеты</a>
+  <a href="tickets.html" class="active"><span class="icon">🎫</span> Обращения</a>
   <div class="sidebar-bottom">
     <a href="profile.html"><span class="icon">👤</span> Профиль</a>
     <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
@@ -63,7 +68,13 @@
 
   async function init() {
     const user = await api('/api/auth/me');
-    if (user) document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+    if (user) {
+      if (typeof updateTopbarAvatar === 'function') {
+        await updateTopbarAvatar(user);
+      } else {
+        document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+      }
+    }
     loadTickets();
   }
 
@@ -115,7 +126,6 @@
 
   init();
 </script>
+  <script src="../../js/theme-manager.js"></script>
 </body>
 </html>
-
-

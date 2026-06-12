@@ -22,8 +22,9 @@
   </div>
   <div class="nav-links" id="navLinks">
     <a href="#skills" onclick="smoothScroll('#skills')">Программа</a>
-    <a href="#about" onclick="smoothScroll('#about')">О нас</a>
+    <a href="#gallery" onclick="smoothScroll('#gallery')">О нас</a>
     <a href="#pricing" onclick="smoothScroll('#pricing')">Стоимость</a>
+    <a href="#reviews" onclick="smoothScroll('#reviews')">Отзывы</a>
     <a href="#footer" onclick="smoothScroll('#footer')">Контакты</a>
   </div>
   <div class="nav-right">
@@ -140,8 +141,8 @@
     <div class="trial-left" data-anim="left">
       <h2>Запишитесь на пробный день:</h2>
       <p>Оставьте заявку и наш менеджер свяжется с вами для организации пробного занятия в школе</p>
-      <button class="btn-accent" onclick="openModal('applyModal')">
-        <span class="trial-arrow">→</span> Оставить заявку
+      <button class="btn-accent trial-btn" onclick="openModal('applyModal')">
+        → Оставить заявку
       </button>
       <br>
       <img src="images/probcat.png" alt="Кот">
@@ -149,15 +150,23 @@
     <div class="trial-right" data-anim="right">
       <div class="trial-step">
         <div class="trial-num">1</div>
-        <p>Оставьте заявку</p>
+        <p>Заполните форму заявки ниже</p>
       </div>
       <div class="trial-step">
         <div class="trial-num">2</div>
-        <p>Уточните у менеджера интересующие детали</p>
+        <p>Наш менеджер свяжется с вами в течение 2 часов</p>
       </div>
       <div class="trial-step">
         <div class="trial-num">3</div>
-        <p>Ваш ребёнок становится частью нашей дружной команды</p>
+        <p>Мы подберем удобное время для бесплатного пробного занятия</p>
+      </div>
+      <div class="trial-step">
+        <div class="trial-num">4</div>
+        <p>На пробном занятии ребенок познакомится с преподавателем и форматом обучения</p>
+      </div>
+      <div class="trial-step">
+        <div class="trial-num">5</div>
+        <p>Вы получите обратную связь и рекомендации по программе обучения</p>
       </div>
     </div>
   </div>
@@ -169,11 +178,23 @@
     <div class="pricing-left" data-anim="left">
       <div class="pricing-img-wrap">
         <img src="images/price.png" alt="Стоимость">
-        <div class="pricing-overlay">
-          <h3>Полный курс:</h3>
-          <div class="price-item"><em>Будни:</em> <span>7 500₽</span></div>
-          <div class="price-item"><em>Выходные:</em> <span>8 200₽</span></div>
-          <div class="price-item"><em>Онлайн-формат:</em> <span>15 000₽</span></div>
+        <div class="pricing-overlay-cards">
+          <div class="pricing-overlay-title">Стоимость обучения:</div>
+          <div class="price-card">
+            <div class="price-card-icon">📅</div>
+            <div class="price-card-label">Будни</div>
+            <div class="price-card-value">7 500 ₽</div>
+          </div>
+          <div class="price-card">
+            <div class="price-card-icon">🌟</div>
+            <div class="price-card-label">Выходные</div>
+            <div class="price-card-value">8 200 ₽</div>
+          </div>
+          <div class="price-card">
+            <div class="price-card-icon">💻</div>
+            <div class="price-card-label">Онлайн</div>
+            <div class="price-card-value">15 000 ₽</div>
+          </div>
         </div>
       </div>
     </div>
@@ -206,9 +227,11 @@
 <!-- ===== ПОДВАЛ ===== -->
 <section id="footer">
   <div class="footer-inner">
-    <h3>Наш главный филиал:</h3>
+    <div class="footer-logo-row">
+      <img src="images/it.png" alt="IT-MANIA" class="footer-logo">
+    </div>
     <div class="footer-map-row">
-      <div>
+      <div class="footer-map">
         <iframe
           src="https://yandex.ru/map-widget/v1/?ll=37.617635%2C55.755814&z=15&l=map"
           allowfullscreen
@@ -216,8 +239,8 @@
         </iframe>
       </div>
       <div class="footer-address">
-        <h4>IT-MANIA</h4>
-        <p>📍 г. Москва, ул. Примерная, д. 1</p>
+        <h4>📍 Наш главный филиал</h4>
+        <p>г. Москва, ул. Примерная, д. 1</p>
         <p>📞 +7 (999) 123-45-67</p>
         <p>✉️ info@it-mania.ru</p>
         <p>🕐 Пн-Пт: 10:00 — 20:00</p>
@@ -225,7 +248,7 @@
       </div>
     </div>
     <div class="footer-bottom">
-      <p>© 2024 IT-MANIA. Все права защищены.</p>
+      <p>© 2025 IT-MANIA. Все права защищены.</p>
       <div class="social-links">
         <a href="#">ВКонтакте</a>
         <a href="#">Telegram</a>
@@ -233,7 +256,6 @@
       </div>
     </div>
   </div>
-</section>
 
 <!-- ===== МОДАЛКА ЗАЯВКИ ===== -->
 <div class="modal-overlay" id="applyModal">
@@ -291,5 +313,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/landing.js"></script>
 <script src="js/pwa.js"></script>
+  <script src="js/theme-manager.js"></script>
 </body>
 </html>

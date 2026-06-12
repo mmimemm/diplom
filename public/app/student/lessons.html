@@ -107,9 +107,12 @@
   <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
   <a href="lessons.html" class="active"><span class="icon">📚</span> Мои уроки</a>
   <a href="progress-map.html"><span class="icon">🗺️</span> Карта прогресса</a>
+  <a href="submissions.html"><span class="icon">📋</span> Задания</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
   <a href="sandbox.html"><span class="icon">🧪</span> Песочница</a>
   <a href="shop.html"><span class="icon">🎪</span> Магазин</a>
   <a href="leaderboard.html"><span class="icon">🏆</span> Рейтинг</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Обращения</a>
   <div class="sidebar-bottom">
     <a href="profile.html"><span class="icon">👤</span> Профиль</a>
     <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
@@ -123,7 +126,7 @@
     <div class="topbar-right">
       <button class="sound-btn" id="soundBtn">🔊</button>
       <button class="notif-btn" onclick="openNotifications()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
-      <div class="user-avatar" id="userAvatar">?</div>
+      <div class="user-avatar" id="userAvatar" onclick="location.href='profile.html'" title="Профиль">?</div>
     </div>
   </div>
 
@@ -222,7 +225,7 @@
     monacoEditor = monaco.editor.create(document.getElementById('monaco-editor'), {
       value: '// Напиши свой код здесь\n',
       language: 'javascript',
-      theme: 'vs-dark',
+      theme: 'vs',
       fontSize: 14,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
@@ -236,12 +239,27 @@
   async function init() {
     const user = await api('/api/auth/me');
     if (!user) return;
-    document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+    if (typeof updateTopbarAvatar === 'function') await updateTopbarAvatar(user);
 
     if (!user.groupId) {
       document.getElementById('modulesList').innerHTML = '<p style="color:#888;text-align:center;padding:30px;">Вы ещё не записаны в группу. Обратитесь к администратору.</p>';
       return;
     }
+
+    // Проверка оплаты курса
+    const subStatus = await api('/api/subscription-status');
+    if (subStatus && !subStatus.isPaid) {
+      document.getElementById('modulesList').innerHTML = `
+        <div style="text-align:center;padding:40px;">
+          <div style="font-size:4rem;margin-bottom:12px;">🔒</div>
+          <h2 style="color:#cc0000;margin-bottom:8px;">Курс не оплачен</h2>
+          <p style="color:#888;font-size:1rem;margin-bottom:16px;">Пожалуйста, попросите родителей оплатить курс, чтобы получить доступ к заданиям</p>
+          <a href="dashboard.html" style="display:inline-block;background:var(--accent);color:white;text-decoration:none;padding:12px 32px;border-radius:30px;font-weight:700;">← Вернуться на главную</a>
+        </div>
+      `;
+      return;
+    }
+
     // Загружаем все курсы без админ-прав — доступно всем
     loadModules();
   }
@@ -444,7 +462,7 @@
 
   init();
 </script>
+  <script src="../../js/shop-effects.js"></script>
+  <script src="../../js/theme-manager.js"></script>
 </body>
 </html>
-
-

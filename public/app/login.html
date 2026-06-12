@@ -9,11 +9,20 @@
   <style>
     body {
       min-height: 100vh;
-      background: linear-gradient(135deg, #1a0033, #330066, #9900FF);
+      background: #1a0033;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
+      position: relative;
+    }
+    /* Быстрый фон через простой блок вместо сложной анимации */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #1a0033, #330066, #9900FF);
+      z-index: 0;
     }
     .login-box {
       background: white;
@@ -92,19 +101,39 @@
   <a href="../index.html" class="back-link">← Вернуться на главную</a>
 </div>
 
-<script>
-  // Создаём фоновые звёздочки
-  const emojis = ['⭐','✨','🌟','💫','🔮','💜'];
-  const container = document.getElementById('bgStars');
-  for (let i = 0; i < 15; i++) {
-    const s = document.createElement('div');
-    s.className = 'bg-star';
-    s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-    s.style.left = Math.random() * 100 + 'vw';
-    s.style.animationDuration = (8 + Math.random() * 12) + 's';
-    s.style.animationDelay = (Math.random() * 10) + 's';
-    container.appendChild(s);
-  }
+  <script>
+    // Фоновые смайлики — создаём сразу (без задержки)
+    const emojis = ['⭐','✨','🌟','💫','🔮','💜','🌈','🎉','🚀','💻'];
+    const container = document.getElementById('bgStars');
+    for (let i = 0; i < 25; i++) {
+      const s = document.createElement('div');
+      s.className = 'bg-star';
+      s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      s.style.left = Math.random() * 100 + 'vw';
+      s.style.animationDuration = (5 + Math.random() * 10) + 's';
+      s.style.animationDelay = (Math.random() * 3) + 's'; // без большой задержки
+      container.appendChild(s);
+    }
+    
+    // Добавляем частицы сразу (без 100ms ожидания)
+    (function() {
+      const emojis2 = ['⭐', '✨', '🌟', '💫', '🎉', '🎊', '💜'];
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        ctx.resume();
+      } catch(e) {}
+      for (let i = 0; i < 8; i++) {
+        setTimeout(() => {
+          const star = document.createElement('div');
+          star.className = 'star-particle';
+          star.textContent = emojis2[Math.floor(Math.random() * emojis2.length)];
+          star.style.left = Math.random() * window.innerWidth + 'px';
+          star.style.top = Math.random() * window.innerHeight + 'px';
+          document.body.appendChild(star);
+          setTimeout(() => star.remove(), 1500);
+        }, i * 100);
+      }
+    })();
 
   // Enter для входа
   document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
@@ -145,7 +174,6 @@
     }
   }
 </script>
+  <script src="../js/theme-manager.js"></script>
 </body>
 </html>
-
-

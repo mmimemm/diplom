@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Тикеты — IT-MANIA</title>
+  <title>Билетики — IT-MANIA</title>
   <link rel="stylesheet" href="../../css/app.css">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 </head>
@@ -17,19 +17,35 @@
   <a href="courses.html"><span class="icon">📚</span> Курсы</a>
   <a href="payments.html"><span class="icon">💳</span> Оплаты</a>
   <a href="reviews.html"><span class="icon">⭐</span> Отзывы</a>
-  <a href="tickets.html" class="active"><span class="icon">🎫</span> Тикеты</a>
+  <a href="tickets.html" class="active"><span class="icon">🎫</span> Билетики</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
+  <a href="shop-admin.html"><span class="icon">🎪</span> Магазин</a>
   <div class="sidebar-bottom">
-    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a><a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
   </div>
 </aside>
 <main class="main-content">
   <div class="topbar">
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
-    <h1>🎫 Обращения (тикеты)</h1>
+    <h1>🎫 Обращения (билетики)</h1>
     <div class="topbar-right">
-      <button class="sound-btn" id="soundBtn">🔊</button>
-      <div class="user-avatar">A</div>
+      <button class="sound-btn" id="soundBtn">🔊</button><button class="notif-btn" onclick="toggleNotificationsPanel()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
+      <div class="user-avatar" id="userAvatar">A</div>
     </div>
+  </div>
+
+  <div class="content-card">
+    <h2>🎫 Выдать билетики ученику</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+      <select id="ticketStudent" style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+        <option value="">Выберите ученика</option>
+      </select>
+      <input id="ticketAmount" type="number" placeholder="Количество" min="1" value="10"
+        style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+      <input id="ticketReason" type="text" placeholder="Причина"
+        style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+    </div>
+    <button onclick="giveTickets()" class="btn-accent" style="border-radius:20px;padding:10px 28px;">Выдать билетики</button>
   </div>
 
   <div id="ticketsList"><p style="color:#888;text-align:center;padding:30px;">Загрузка...</p></div>
@@ -64,6 +80,24 @@
   const statusLabel = { open: '🔴 Открыт', in_progress: '🟡 В работе', closed: '🟢 Закрыт' };
 
   async function init() {
+    const me = await api("/api/auth/me");
+    if (me && typeof updateTopbarAvatar === "function") {
+      await updateTopbarAvatar(me);
+    }
+    // Загружаем список учеников для выдачи билетиков
+    const students = await api('/api/admin/users?role=student') || [];
+    const studentSelect = document.getElementById('ticketStudent');
+    
+    if (students.length) {
+      students.forEach(student => {
+        const option = document.createElement('option');
+        option.value = student._id;
+        option.textContent = `${student.lastName || ''} ${student.firstName || ''} (${student.login})`;
+        studentSelect.appendChild(option);
+      });
+    }
+    
+    // Загружаем обращения
     const tickets = await api('/api/tickets') || [];
     const list = document.getElementById('ticketsList');
 
@@ -94,6 +128,49 @@
         </tbody>
       </table>
     </div>`;
+  }
+
+  async function giveTickets() {
+    const studentId = document.getElementById('ticketStudent').value;
+    const amount = parseInt(document.getElementById('ticketAmount').value);
+    const reason = document.getElementById('ticketReason').value.trim();
+    
+    if (!studentId) {
+      showToast('Выберите ученика', 'error');
+      return;
+    }
+    
+    if (!amount || amount < 1) {
+      showToast('Введите количество билетиков', 'error');
+      return;
+    }
+    
+    if (!reason) {
+      showToast('Укажите причину выдачи', 'error');
+      return;
+    }
+    
+    try {
+      const res = await api(`/api/admin/users/${studentId}/tickets`, {
+        method: 'POST',
+        body: JSON.stringify({ amount, reason })
+      });
+      
+      if (res?.tickets !== undefined) {
+        showToast(`${amount} билетиков выдано! 🎫`);
+        playSound('success');
+        spawnStars(10);
+        
+        // Очищаем форму
+        document.getElementById('ticketStudent').value = '';
+        document.getElementById('ticketAmount').value = 10;
+        document.getElementById('ticketReason').value = '';
+      } else {
+        showToast('Ошибка выдачи билетиков', 'error');
+      }
+    } catch (error) {
+      showToast('Ошибка: ' + error.message, 'error');
+    }
   }
 
   async function openTicket(id, subject, userName) {
@@ -140,6 +217,7 @@
 
   init();
 </script>
+  <script src="../../js/theme-manager.js"></script>
 </body>
 </html>
 

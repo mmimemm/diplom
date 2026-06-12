@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Связь с родителями — IT-MANIA</title>
+  <link rel="stylesheet" href="../../css/app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    .parent-card {
+      background: white;
+      border-radius: var(--radius-card);
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: var(--transition);
+    }
+    .parent-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .message-box {
+      background: var(--bg);
+      border-radius: 16px;
+      padding: 16px;
+      margin: 12px 0;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .message-item {
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    .message-sender {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .message-text {
+      font-size: 0.85rem;
+      color: #444;
+      margin-top: 2px;
+    }
+    .message-time {
+      font-size: 0.75rem;
+      color: #888;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="../../images/star.gif?v=3" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'">
+    <span>IT-MANIA</span>
+  </div>
+  <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
+  <a href="check.html"><span class="icon">✅</span> Проверка заданий</a>
+  <a href="lessons-editor.html"><span class="icon">✏️</span> Конструктор уроков</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
+  <a href="group.html"><span class="icon">👥</span> Моя группа</a>
+  <a href="parents.html" class="active"><span class="icon">👨‍👩‍👧‍👦</span> Родители</a>
+    <div class="sidebar-bottom">
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a>
+    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+  </div>
+</aside>
+<main class="main-content">
+  <div class="topbar">
+    <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
+    <h1>👨‍👩‍👧‍👦 Связь с родителями</h1>
+    <div class="topbar-right">
+      <button class="sound-btn" id="soundBtn">🔊</button>
+      <button class="notif-btn" onclick="openNotifPanel()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
+      <div class="user-avatar" id="userAvatar">?</div>
+    </div>
+  </div>
+
+  <div class="stats-grid" style="margin-bottom:16px;">
+    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-info"><h3 id="parentsCount">0</h3><p>Родителей в группе</p></div></div>
+    <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-info"><h3 id="unreadCount">0</h3><p>Новых сообщений</p></div></div>
+    <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-info"><h3 id="progressAvg">0%</h3><p>Средний прогресс</p></div></div>
+  </div>
+
+  <div class="content-card">
+    <h2>Родители моих учеников</h2>
+    <div id="parentsList">
+      <p style="color:#888;text-align:center;padding:30px;">Загрузка...</p>
+    </div>
+  </div>
+
+  <div class="content-card" id="chatSection" style="display:none;">
+    <button onclick="closeChat()" style="background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer;margin-bottom:16px;">← Назад</button>
+    <h2 id="chatTitle">Переписка</h2>
+    
+    <div class="message-box" id="messageList">
+      <!-- Сообщения будут здесь -->
+    </div>
+    
+    <div style="display:flex;gap:8px;">
+      <input id="messageText" type="text" placeholder="Напишите сообщение..."
+        style="flex:1;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+      <button onclick="sendMessage()"
+        style="background:var(--accent);color:white;border:none;border-radius:20px;padding:10px 24px;font-weight:700;cursor:pointer;">
+        Отправить
+      </button>
+    </div>
+  </div>
+</main>
+
+<div id="cat-assistant">
+  <div class="cat-bubble" id="catBubble"></div>
+  <img src="../../images/cat.png" alt="Кот">
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+  requireAuth(['teacher', 'admin']);
+
+  let currentParentId = null;
+  let chatMessages = [];
+
+  async function init() {
+    const user = await api('/api/auth/me');
+    if (user && typeof updateTopbarAvatar === 'function') {
+      await updateTopbarAvatar(user);
+    } else if (user) {
+      document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+    }
+    
+    await loadParents();
+  }
+
+  async function loadParents() {
+    const parents = await api('/api/teacher/parents') || [];
+    document.getElementById('parentsCount').textContent = parents.length;
+    
+    // Считаем прогресс
+    let totalProgress = 0;
+    parents.forEach(p => {
+      if (p.children && p.children.length) {
+        p.children.forEach(c => { totalProgress += c.xp || 0; });
+      }
+    });
+    document.getElementById('progressAvg').textContent = parents.length ? Math.round(totalProgress / parents.length) + ' XP' : '0 XP';
+    
+    if (!parents.length) {
+      document.getElementById('parentsList').innerHTML = `
+        <div style="text-align:center;padding:40px;">
+          <div style="font-size:3rem;margin-bottom:12px;">👥</div>
+          <p style="font-weight:700;font-size:1.1rem;">Нет родителей в группе</p>
+          <p style="color:#888;">Родители появятся здесь, когда ученики будут добавлены в вашу группу</p>
+        </div>`;
+      return;
+    }
+    
+    document.getElementById('parentsList').innerHTML = parents.map(parent => {
+      const childrenStr = (parent.children || []).map(c => 
+        `${c.firstName || ''} (${c.xp || 0} XP, ур.${c.level || 1})`
+      ).join(', ');
+      
+      return `
+      <div class="parent-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div>
+            <div style="font-weight:800;font-size:1rem;">${escHtml(parent.firstName || '')} ${escHtml(parent.lastName || '')}</div>
+            <div style="color:#888;font-size:0.85rem;">${childrenStr ? 'Дети: ' + childrenStr : 'Нет привязанных детей'}</div>
+            <div style="color:#aaa;font-size:0.75rem;">${parent.email || ''} ${parent.phone ? '· ' + parent.phone : ''}</div>
+          </div>
+          <button onclick="openChat('${parent._id}', '${escHtml(parent.firstName || '')} ${escHtml(parent.lastName || '')}')"
+            style="background:var(--accent);color:white;border:none;border-radius:20px;padding:8px 16px;font-weight:700;cursor:pointer;">
+            💬 Написать
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function openChat(parentId, parentName) {
+    currentParentId = parentId;
+    document.getElementById('parentsList').style.display = 'none';
+    document.getElementById('chatSection').style.display = 'block';
+    document.getElementById('chatTitle').textContent = `💬 ${parentName}`;
+    
+    await loadMessages();
+  }
+
+  function closeChat() {
+    currentParentId = null;
+    document.getElementById('parentsList').style.display = 'block';
+    document.getElementById('chatSection').style.display = 'none';
+    document.getElementById('messageText').value = '';
+  }
+
+  async function loadMessages() {
+    if (!currentParentId) return;
+    const messages = await api(`/api/teacher/parent-chat/${currentParentId}`) || [];
+    chatMessages = messages;
+    
+    const messageList = document.getElementById('messageList');
+    if (!messages.length) {
+      messageList.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">Нет сообщений</p>';
+      return;
+    }
+    
+    messageList.innerHTML = messages.map(msg => {
+      const isTeacher = msg.from === 'teacher';
+      return `
+      <div class="message-item">
+        <div class="message-sender">${isTeacher ? 'Вы (учитель)' : 'Родитель'}</div>
+        <div class="message-text">${escHtml(msg.text)}</div>
+        <div class="message-time">${new Date(msg.createdAt).toLocaleString('ru')}</div>
+      </div>`;
+    }).join('');
+    
+    messageList.scrollTop = messageList.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const text = document.getElementById('messageText').value.trim();
+    if (!text || !currentParentId) return;
+    
+    const res = await api(`/api/teacher/parent-chat/${currentParentId}`, {
+      method: 'POST',
+      body: JSON.stringify({ text })
+    });
+    
+    if (res) {
+      document.getElementById('messageText').value = '';
+      playSound('ding');
+      await loadMessages();
+    }
+  }
+
+  function openNotifPanel() {
+    showToast('Уведомления загружаются...', 'info');
+  }
+
+  function escHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>'); }
+
+  init();
+</script>
+  <script src="../../js/theme-manager.js"></script>
+</body>
+</html>

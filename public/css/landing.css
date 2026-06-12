@@ -234,7 +234,8 @@ body {
   position: absolute;
   bottom: -200px;
   right: 40px;
-  width: 160px;
+  width: 220px; /* такой же размер как у динозавра */
+  height: auto;
   z-index: 5;
   transition: bottom 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease;
   pointer-events: none;
@@ -319,7 +320,6 @@ body {
 }
 .trial-left h2 { font-size: 2rem; font-weight: 800; margin-bottom: 16px; }
 .trial-left p { color: #666; margin-bottom: 28px; font-size: 1.05rem; }
-.trial-arrow { color: var(--accent); font-size: 1.5rem; margin-right: 8px; }
 .trial-left img { width: 320px; margin-top: 32px; }
 .trial-step {
   display: flex;
@@ -334,7 +334,17 @@ body {
   line-height: 1;
   min-width: 60px;
   text-shadow: 2px 2px 0 var(--accent-light);
+  animation: numPulse 1.5s ease-in-out infinite;
 }
+@keyframes numPulse {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+.trial-step:nth-child(1) .trial-num { animation-delay: 0s; }
+.trial-step:nth-child(2) .trial-num { animation-delay: 0.2s; }
+.trial-step:nth-child(3) .trial-num { animation-delay: 0.4s; }
+.trial-step:nth-child(4) .trial-num { animation-delay: 0.6s; }
+.trial-step:nth-child(5) .trial-num { animation-delay: 0.8s; }
 .trial-step p { font-size: 1.05rem; font-weight: 600; padding-top: 8px; }
 
 /* Стоимость */
@@ -353,18 +363,52 @@ body {
 .pricing-left { position: relative; }
 .pricing-img-wrap { position: relative; display: inline-block; }
 .pricing-img-wrap img { width: 100%; max-width: 520px; border-radius: var(--radius-card); }
-.pricing-overlay {
+/* Карточки цен — поверх картинки price.png */
+.pricing-overlay-cards {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  color: var(--pink);
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
 }
-.pricing-overlay h3 { font-size: 1.3rem; font-weight: 800; margin-bottom: 12px; }
-.pricing-overlay .price-item { font-size: 1.1rem; margin-bottom: 6px; }
-.pricing-overlay .price-item span { color: var(--pink); font-weight: 700; }
-.pricing-overlay .price-item em { color: white; font-style: normal; }
+.pricing-overlay-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--accent);
+  margin-bottom: 8px;
+  text-align: center;
+  text-shadow: 1px 1px 0 var(--accent-light);
+}
+.price-card {
+  background: none;
+  backdrop-filter: none;
+  border: none;
+  border-radius: 0;
+  padding: 4px 8px;
+  text-align: center;
+  color: #1a1a2e;
+  min-width: auto;
+  flex: none;
+  transition: none;
+}
+.price-card:hover {
+  transform: none;
+  background: none;
+  border-color: none;
+  box-shadow: none;
+}
+.price-card-icon { font-size: 2rem; margin-bottom: 4px; }
+.price-card-label { font-weight: 700; font-size: 1.3rem; opacity: 0.9; margin-bottom: 4px; }
+.price-card-value {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+.price-card-period { font-size: 0.9rem; opacity: 0.7; color: #1a1a2e; }
 
 .pricing-right { color: white; }
 .pricing-right h3 { font-size: 1.5rem; font-weight: 800; margin-bottom: 20px; }
@@ -431,12 +475,21 @@ body {
   color: white;
 }
 .footer-inner h3 { font-size: 1.5rem; font-weight: 800; margin-bottom: 24px; }
-.footer-map-row { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.footer-logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+.footer-logo-row .footer-logo { height: 70px; width: auto; object-fit: contain; }
+.footer-map-row { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; margin-bottom: 32px; }
 .footer-map iframe { width: 100%; height: 300px; border-radius: var(--radius-card); border: none; }
 .footer-address h4 { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; }
 .footer-address p { opacity: 0.85; margin-bottom: 8px; }
 .footer-bottom {
-  margin-top: 40px;
+  margin-top: 32px;
   padding-top: 24px;
   border-top: 1px solid rgba(255,255,255,0.2);
   display: flex;
@@ -556,30 +609,124 @@ body {
   padding: 100px 40px 60px;
   background: white;
 }
-.lessons-inner {
+
+/* Hero-секция с картинкой наверху */
+#lessons-hero {
+  padding: 120px 40px 60px;
+  background: linear-gradient(180deg, #f9f5ff 0%, #ffffff 100%);
+  text-align: center;
+}
+.lessons-hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+.lessons-hero-img {
+  width: 280px;
+  margin-bottom: 24px;
+}
+.lessons-hero-content h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--text-dark);
+  margin-bottom: 16px;
+}
+.lessons-hero-content p {
+  color: #666;
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
+/* Формат / длительность */
+#lessons-format {
+  padding: 40px 40px 20px;
+  background: white;
+}
+#lessons-cards {
+  padding: 20px 40px 60px;
+  background: white;
+}
+.lessons-section-inner {
   max-width: 1100px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
-  align-items: start;
 }
-.lessons-left h2 { font-size: 2rem; font-weight: 800; margin-bottom: 24px; }
-.lessons-left img { width: 320px; margin-top: 24px; }
+
+.format-card {
+  background: linear-gradient(135deg, #9900FF, #FF69B4);
+  border-radius: var(--radius-card);
+  padding: 28px 32px;
+  color: white;
+  margin-bottom: 24px;
+  transition: var(--transition);
+  box-shadow: 0 8px 24px rgba(153,0,255,0.25);
+}
+.format-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 36px rgba(153,0,255,0.4);
+}
+.format-card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+.format-card h3 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-bottom: 14px;
+}
+.format-card ul {
+  list-style: none;
+}
+.format-card ul li {
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.05rem;
+}
+.format-card ul li span {
+  font-size: 1.3rem;
+}
+
+/* Карточки занятий */
 .lesson-card {
   display: flex;
   align-items: center;
   gap: 20px;
   background: var(--gray-light);
+  border: 2px solid transparent;
   border-radius: var(--radius-card);
   padding: 20px 24px;
   margin-bottom: 16px;
   transition: var(--transition);
 }
-.lesson-card:hover { transform: translateX(8px); box-shadow: var(--shadow-card); }
+.lesson-card:hover {
+  transform: translateX(8px);
+  box-shadow: var(--shadow-card);
+  border-color: var(--accent-light);
+}
 .lesson-card img { width: 90px; height: 90px; object-fit: contain; }
-.lesson-card-text h4 { font-weight: 700; font-size: 1.05rem; }
-.lesson-card-text p { color: #888; font-size: 0.9rem; margin-top: 4px; }
+.lesson-card-circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: white;
+  flex-shrink: 0;
+}
+.lesson-card-accent {
+  background: rgba(153,0,255,0.07);
+  border: 2px solid rgba(153,0,255,0.15);
+}
+.lesson-card-accent:hover {
+  background: rgba(153,0,255,0.12);
+  border-color: var(--accent);
+}
+.lesson-card-text h4 { font-weight: 700; font-size: 1.05rem; margin-bottom: 4px; }
+.lesson-card-freq { color: var(--accent); font-weight: 700; font-size: 0.9rem; margin-top: 4px; }
+.lesson-card-desc { color: #888; font-size: 0.9rem; margin-top: 4px; }
 
 /* ===== АНИМАЦИИ ===== */
 @keyframes floatY {
@@ -666,8 +813,18 @@ body {
   .carousel-inner img { height: 200px; }
   #hero .hero-logo { width: 85vw; height: auto; }
   .btn-hero-main { font-size: 0.95rem; padding: 12px 24px; }
-  .pricing-overlay h3 { font-size: 1rem; }
-  .pricing-overlay .price-item { font-size: 0.9rem; }
+  .pricing-overlay-cards {
+    gap: 4px;
+    padding: 6px;
+  }
+  .price-card {
+    padding: 10px 8px;
+    min-width: auto;
+  }
+  .price-card-icon { font-size: 1.4rem; }
+  .price-card-value { font-size: 1rem; }
+  .price-card-label { font-size: 0.75rem; }
+  .price-card-period { font-size: 0.65rem; }
   
   /* Дополнительная адаптивность для мобильных */
   .btn-accent, .btn-white { padding: 10px 20px; font-size: 0.9rem; }

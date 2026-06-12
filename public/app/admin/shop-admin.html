@@ -25,10 +25,11 @@
   <a href="courses.html"><span class="icon">📚</span> Курсы</a>
   <a href="payments.html"><span class="icon">💳</span> Оплаты</a>
   <a href="reviews.html"><span class="icon">⭐</span> Отзывы</a>
-  <a href="tickets.html"><span class="icon">🎫</span> Тикеты</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Билетики</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
   <a href="shop-admin.html" class="active"><span class="icon">🎪</span> Магазин</a>
   <div class="sidebar-bottom">
-    <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a><a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
   </div>
 </aside>
 <main class="main-content">
@@ -36,8 +37,8 @@
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
     <h1>🎪 Управление магазином</h1>
     <div class="topbar-right">
-      <button class="sound-btn" id="soundBtn">🔊</button>
-      <div class="user-avatar">A</div>
+      <button class="sound-btn" id="soundBtn">🔊</button><button class="notif-btn" onclick="toggleNotificationsPanel()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
+      <div class="user-avatar" id="userAvatar">A</div>
     </div>
   </div>
 
@@ -54,12 +55,20 @@
       <input id="iPrice" type="number" placeholder="Цена 🎫" value="50"
         style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
     </div>
-    <div style="display:flex;gap:12px;margin-top:12px;align-items:center;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+      <input id="iCss" type="text" placeholder="CSS (для editor_skin)" style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+      <input id="iEffect" type="text" placeholder="Effect (для avatar, напр. clownnose)" style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+    </div>
+    <div style="display:flex;gap:12px;margin-top:12px;align-items:center;flex-wrap:wrap;">
       <select id="iType" style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
         <option value="avatar">Элемент аватара</option>
         <option value="editor_skin">Скин редактора</option>
         <option value="pin_project">Закрепить проект</option>
+        <option value="boost">Буст / Усиление</option>
       </select>
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;font-weight:600;">
+        <input type="checkbox" id="iDuration" value="86400000"> Длительность 24ч
+      </label>
       <button onclick="addItem()" class="btn-accent" style="border-radius:20px;padding:10px 28px;">
         Добавить товар
       </button>
@@ -84,7 +93,7 @@
 <script>
   requireAuth(['admin']);
 
-  const typeLabel = { avatar:'Аватар', editor_skin:'Скин редактора', pin_project:'Закрепить проект' };
+  const typeLabel = { avatar:'Аватар', editor_skin:'Скин редактора', pin_project:'Закрепить проект', boost:'Буст / Усиление' };
 
   async function loadItems() {
     const items = await api('/api/shop') || [];
@@ -104,21 +113,26 @@
   async function addItem() {
     const name = document.getElementById('iName').value.trim();
     if (!name) { showToast('Введите название', 'error'); return; }
+    const type = document.getElementById('iType').value;
+    const hasDuration = document.getElementById('iDuration').checked;
     const res = await api('/api/shop/items', {
       method: 'POST',
       body: JSON.stringify({
-        name, description: document.getElementById('iDesc').value,
+        name,
+        description: document.getElementById('iDesc').value,
         icon: document.getElementById('iIcon').value,
         price: parseInt(document.getElementById('iPrice').value) || 50,
-        type: document.getElementById('iType').value
+        type: type,
+        css: document.getElementById('iCss').value || undefined,
+        effect: document.getElementById('iEffect').value || undefined,
+        duration: hasDuration ? 86400000 : 0
       })
     });
-    if (res?._id) { showToast('Товар добавлен! 🎪'); playSound('success'); spawnStars(8); document.getElementById('iName').value = ''; loadItems(); }
+    if (res?._id) { showToast('Товар добавлен! 🎪'); playSound('success'); spawnStars(8); document.getElementById('iName').value = ''; document.getElementById('iCss').value = ''; document.getElementById('iEffect').value = ''; document.getElementById('iDuration').checked = false; loadItems(); }
   }
 
   loadItems();
 </script>
+  <script src="../../js/theme-manager.js"></script>
 </body>
 </html>
-
-

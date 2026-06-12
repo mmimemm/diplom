@@ -8,16 +8,32 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <style>
-    .shop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
+    .shop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
     .shop-item {
       background:white; border-radius:20px; padding:20px; text-align:center;
       box-shadow:0 2px 12px rgba(0,0,0,0.06); transition:0.3s; position:relative;
+      overflow:hidden; border:2px solid transparent;
     }
-    .shop-item:hover { transform:translateY(-6px); box-shadow:0 8px 32px rgba(153,0,255,0.18); }
+    .shop-item:hover { transform:translateY(-6px); box-shadow:0 8px 32px rgba(153,0,255,0.18); border-color:var(--accent); }
     .shop-item .item-icon { font-size:3rem; margin-bottom:10px; }
     .shop-item h3 { font-size:1rem; font-weight:800; margin-bottom:6px; }
     .shop-item p { font-size:0.8rem; color:#888; margin-bottom:14px; }
     .shop-item .price { font-size:1.1rem; font-weight:800; color:var(--accent); margin-bottom:12px; }
+    .shop-item .item-type-badge {
+      display:inline-block; padding:3px 12px; border-radius:30px;
+      font-size:0.7rem; font-weight:700; margin-bottom:8px;
+    }
+    .shop-item .type-editor_skin { background:#f0e8ff; color:#9900FF; }
+    .shop-item .type-avatar { background:#e8f4ff; color:#0066cc; }
+    .shop-item .type-pin_project { background:#fff3e0; color:#e65100; }
+    .shop-item .type-boost { background:#e8ffe8; color:#00aa44; }
+    .shop-item.owned { border-color:#00aa44; background:#f8fff8; }
+    .shop-item.owned::after {
+      content:'✓'; position:absolute; top:8px; right:8px;
+      background:#00aa44; color:white; width:24px; height:24px;
+      border-radius:50%; display:flex; align-items:center; justify-content:center;
+      font-size:0.8rem; font-weight:700;
+    }
     .shop-closed { text-align:center; padding:60px 20px; }
     .shop-closed .big-icon { font-size:5rem; margin-bottom:16px; }
     .timer-box { background:var(--accent); color:white; border-radius:20px; padding:20px 32px; display:inline-block; margin-top:16px; }
@@ -31,12 +47,14 @@
     <span>IT-MANIA</span>
   </div>
   <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
-  <a href="lessons.html"><span class="icon">📚</span> Мои уроки</a>
+  <a href="lessons.html" ><span class="icon">📚</span> Мои уроки</a>
   <a href="progress-map.html"><span class="icon">🗺️</span> Карта прогресса</a>
+  <a href="submissions.html"><span class="icon">📋</span> Задания</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
   <a href="sandbox.html"><span class="icon">🧪</span> Песочница</a>
   <a href="shop.html" class="active"><span class="icon">🎪</span> Магазин</a>
   <a href="leaderboard.html"><span class="icon">🏆</span> Рейтинг</a>
-  <a href="tickets.html"><span class="icon">🎫</span> Мои тикеты</a>
+  <a href="tickets.html"><span class="icon">🎫</span> Обращения</a>
   <div class="sidebar-bottom">
     <a href="profile.html"><span class="icon">👤</span> Профиль</a>
     <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
@@ -50,7 +68,7 @@
     <div class="topbar-right">
       <button class="sound-btn" id="soundBtn">🔊</button>
       <button class="notif-btn" onclick="toggleNotificationsPanel()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
-      <div class="user-avatar" id="userAvatar">?</div>
+      <div class="user-avatar" id="userAvatar" onclick="location.href='profile.html'" title="Профиль">?</div>
     </div>
   </div>
 
@@ -76,14 +94,20 @@
 </div>
 
 <script src="../../js/app.js"></script>
+<script src="../../js/shop-effects.js"></script>
+<script src="../../js/theme-manager.js"></script>
 <script>
   requireAuth(['student']);
 
   function isShopOpen() {
+    // Магазин теперь всегда открыт
+    return true;
+    /*
     const now = new Date();
     const m = now.getMonth() + 1, d = now.getDate();
     return (m === 12 && d >= 25) || (m === 1 && d <= 1) ||
            (m === 5 && d >= 25) || (m === 6) || (m === 7 && d <= 1);
+    */
   }
 
   function nextOpenDate() {
@@ -121,7 +145,11 @@
     const user = await api('/api/auth/me');
     if (!user) return;
 
-    document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+    if (typeof updateTopbarAvatar === 'function') {
+      await updateTopbarAvatar(user);
+    } else {
+      document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+    }
     document.getElementById('myTickets').textContent = user.tickets || 0;
 
     if (!isShopOpen()) {
@@ -148,7 +176,17 @@
     const purchases = await api('/api/shop/my') || [];
     renderPurchases(purchases);
 
-    const boughtIds = new Set(purchases.map(p => String(p.itemId?._id || p.itemId)));
+    // Корректное получение ID купленных товаров
+    // purchases[].itemId может быть populated объектом или просто ID
+    var boughtIds = new Set();
+    purchases.forEach(function(p) {
+      var itemId = p.itemId;
+      if (itemId && typeof itemId === 'object') {
+        boughtIds.add(String(itemId._id));
+      } else if (itemId) {
+        boughtIds.add(String(itemId));
+      }
+    });
 
     if (!items.length) {
       document.getElementById('shopContent').innerHTML = '<div class="content-card"><p style="color:#888;text-align:center;padding:30px;">Товары скоро появятся!</p></div>';
@@ -160,11 +198,13 @@
         <h2>🛍️ Доступные товары</h2>
         <div class="shop-grid">
           ${items.map(item => {
-            const bought = boughtIds.has(String(item._id));
-            const canBuy = (user.tickets || 0) >= item.price && !bought;
+    const bought = boughtIds.has(String(item._id));
+    const canBuy = (user.tickets || 0) >= item.price && !bought;
+    const typeNames = { avatar:'Аватар', editor_skin:'Скин редактора', pin_project:'Закрепить проект', boost:'Буст' };
             return `
-              <div class="shop-item">
+              <div class="shop-item${bought ? ' owned' : ''}">
                 <div class="item-icon">${item.icon || '🎁'}</div>
+                <span class="item-type-badge type-${item.type}">${typeNames[item.type] || item.type}</span>
                 <h3>${item.name}</h3>
                 <p>${item.description || ''}</p>
                 <div class="price">🎫 ${item.price}</div>
@@ -187,7 +227,40 @@
       document.getElementById('myTickets').textContent = res.tickets;
       showToast(`Куплено: ${name}! 🎉`);
       launchConfetti();
-      init();
+      
+      // Получаем свежие данные пользователя и синхронизируем avatarConfig
+      const freshUser = await api('/api/auth/me');
+      if (freshUser) {
+        // Обновляем аватар в топбаре
+        if (typeof updateTopbarAvatar === 'function') {
+          await updateTopbarAvatar(freshUser);
+        }
+        
+        // Добавляем купленный аватар в avatarConfig.unlockedItems на сервере
+        // чтобы при заходе в профиль он уже был разблокирован
+        var config = freshUser.avatarConfig || { unlockedItems: [] };
+        var unlocked = config.unlockedItems || [];
+        // Ищем эффект купленного аватара среди всех товаров
+        var items = await api('/api/shop');
+        var boughtItem = null;
+        if (items) {
+          for (var i = 0; i < items.length; i++) {
+            if (items[i]._id === id) { boughtItem = items[i]; break; }
+          }
+        }
+        if (boughtItem && boughtItem.effect && boughtItem.type === 'avatar') {
+          if (unlocked.indexOf(boughtItem.effect) === -1) {
+            unlocked.push(boughtItem.effect);
+            config.unlockedItems = unlocked;
+            await api('/api/auth/me', { method: 'PATCH', body: JSON.stringify({ avatarConfig: config }) });
+          }
+        }
+      }
+      // Применяем эффекты покупки (скины редактора и т.д.)
+      if (typeof loadShopEffects === 'function') await loadShopEffects();
+      // Перезагружаем магазин (чтобы покупка отобразилась)
+      await init();
+      updateMonacoTheme?.();
     } else {
       showToast(res?.error || 'Ошибка покупки', 'error');
     }

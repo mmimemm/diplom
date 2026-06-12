@@ -10,12 +10,18 @@
 </head>
 <body>
 <aside class="sidebar">
-  <div class="sidebar-logo"><img src="../../images/star.gif?v=3" alt="IT-MANIA" onerror="this.onerror=null; this.onerror=null; this.src='../../images/star.png'"><span>IT-MANIA</span></div>
+  <div class="sidebar-logo">
+    <img src="../../images/star.gif?v=3" alt="IT-MANIA" onerror="this.onerror=null; this.onerror=null; this.src='../../images/star.png'">
+    <span>IT-MANIA</span>
+  </div>
   <a href="dashboard.html"><span class="icon">🏠</span> Главная</a>
   <a href="check.html"><span class="icon">✅</span> Проверка заданий</a>
   <a href="lessons-editor.html"><span class="icon">✏️</span> Конструктор уроков</a>
+  <a href="chat.html"><span class="icon">💬</span> Чаты</a>
   <a href="group.html" class="active"><span class="icon">👥</span> Моя группа</a>
-  <div class="sidebar-bottom">
+  <a href="parents.html" ><span class="icon">👨‍👩‍👧‍👦</span> Родители</a>
+    <div class="sidebar-bottom">
+    <a href="profile.html"><span class="icon">👤</span> Профиль</a>
     <a href="#" id="logoutBtn"><span class="icon">🚪</span> Выйти</a>
   </div>
 </aside>
@@ -25,6 +31,7 @@
     <h1>👥 Моя группа</h1>
     <div class="topbar-right">
       <button class="sound-btn" id="soundBtn">🔊</button>
+      <button class="notif-btn" onclick="toggleNotificationsPanel()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
       <div class="user-avatar" id="userAvatar">?</div>
     </div>
   </div>
@@ -63,7 +70,11 @@
   async function init() {
     const user = await api('/api/auth/me');
     if (!user) return;
-    document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+    if (typeof updateTopbarAvatar === 'function') {
+      await updateTopbarAvatar(user);
+    } else {
+      document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
+    }
 
     const groups = await api('/api/admin/groups') || [];
     const myGroup = groups.find(g =>
@@ -135,7 +146,6 @@
 
   init();
 </script>
+  <script src="../../js/theme-manager.js"></script>
 </body>
 </html>
-
-
