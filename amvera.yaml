@@ -1,16 +1,9 @@
 meta:
-  name: it-mania
   environment: node
   toolchain:
     name: npm
-    version: "18"
-build:
-  skip: false
-  commands:
-    - npm install
+    version: 18
+
 run:
-  command: node server/server.js
-  ports:
-    - port: 3000
-      protocol: http
-      target-port: 3000
+  scriptName: server/server.js
+  containerPort: 3000
