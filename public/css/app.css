@@ -405,7 +405,7 @@ body {
   transition: transform 0.3s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  touch-action: none;
+  touch-action: pan-y pinch-zoom;
 }
 #cat-assistant.dragging {
   cursor: grabbing;

@@ -503,6 +503,7 @@ function initCatAssistant() {
   document.addEventListener('mouseup', _boundMouseUp);
 
   // Touch — с порогом: не начинаем drag сразу, ждём пока палец сдвинется
+  // Используем { passive: false } чтобы иметь возможность вызвать preventDefault и заблокировать скролл при перетаскивании
   cat.addEventListener('touchstart', function(e) {
     const t = e.touches[0];
     // Запоминаем начальную позицию, но drag активируем только после движения
@@ -514,12 +515,14 @@ function initCatAssistant() {
     isDragging = true;
     wasDragged = false;
     dragArmed = false;
+    cat.style.touchAction = 'none';  // Блокируем скролл на время перетаскивания
     cat.classList.add('dragging');
     cat.style.left = rect.left + 'px';
     cat.style.top = rect.top + 'px';
     cat.style.bottom = 'auto';
     cat.style.right = 'auto';
-  }, { passive: true });
+    e.preventDefault();  // Предотвращаем скролл при перетаскивании
+  }, { passive: false });
 
   _boundTouchMove = function(e) {
     if (!isDragging) return;
@@ -539,8 +542,11 @@ function initCatAssistant() {
     newTop = Math.max(0, Math.min(newTop, maxTop));
     cat.style.left = newLeft + 'px';
     cat.style.top = newTop + 'px';
+    e.preventDefault();  // Блокируем скролл во время перетаскивания
   };
   _boundTouchEnd = function() {
+    // Восстанавливаем touch-action для скролла
+    cat.style.touchAction = '';
     if (!isDragging) return;
     isDragging = false;
     cat.classList.remove('dragging');
