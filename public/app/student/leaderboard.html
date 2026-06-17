@@ -30,7 +30,7 @@
   </div>
 </aside>
 <main class="main-content">
-  <div class="topbar">
+  <div class="topbar scroll-anim scroll-anim-fade-up">
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
     <h1>🏆 Рейтинг группы</h1>
     <div class="topbar-right">
@@ -41,15 +41,15 @@
   </div>
 
   <!-- Топ-3 подиум -->
-  <div class="content-card" style="text-align:center;">
-    <h2>🥇 Топ группы</h2>
-    <div id="podium" style="display:flex;justify-content:center;align-items:flex-end;gap:16px;padding:20px 0;"></div>
+  <div class="content-card scroll-anim scroll-anim-fade-up" style="text-align:center;">
+    <h2 class="scroll-anim scroll-anim-fade-up">🥇 Топ группы</h2>
+    <div id="podium" class="stagger-container" style="display:flex;justify-content:center;align-items:flex-end;gap:16px;padding:20px 0;flex-wrap:wrap;"></div>
   </div>
 
   <!-- Полный список -->
-  <div class="content-card">
-    <h2>Все участники</h2>
-    <div id="fullList"></div>
+  <div class="content-card scroll-anim scroll-anim-fade-up">
+    <h2 class="scroll-anim scroll-anim-fade-up">Все участники</h2>
+    <div id="fullList" class="stagger-container"></div>
   </div>
 </main>
 
@@ -70,6 +70,29 @@
     border-radius: 12px 12px 0 0; display: flex; align-items: center;
     justify-content: center; font-size: 1.5rem; font-weight: 900; color: white;
   }
+
+  /* Адаптивность */
+  @media (max-width: 768px) {
+    .leaderboard-item { flex-wrap: wrap; gap: 8px; }
+    #podium { gap: 8px; }
+    .podium-avatar { width: 48px !important; height: 48px !important; font-size: 1.1rem !important; }
+    .podium-base { width: 60px !important; height: 50px !important; font-size: 1.1rem !important; }
+  }
+  @media (max-width: 480px) {
+    #podium { gap: 6px; }
+    .podium-item { gap: 4px; }
+    .podium-avatar { width: 40px !important; height: 40px !important; font-size: 0.9rem !important; }
+    .podium-base { width: 50px !important; height: 40px !important; font-size: 1rem !important; }
+    .leaderboard-item { flex-wrap: wrap; gap: 6px; padding: 8px 0; }
+    .lb-rank { width: 24px; font-size: 1rem; }
+    .lb-avatar { width: 30px; height: 30px; font-size: 0.75rem; }
+  }
+  @media (max-width: 360px) {
+    .podium-avatar { width: 36px !important; height: 36px !important; font-size: 0.8rem !important; }
+    .podium-base { width: 42px !important; height: 34px !important; font-size: 0.85rem !important; }
+    .podium-item .podium-base { width: 42px !important; height: 34px !important; font-size: 0.85rem !important; }
+  }
+  .main-content, .content-card, .stats-grid, #podium, .leaderboard-item { width: 100% !important; max-width: 100% !important; }
 </style>
 
 <script src="../../js/app.js"></script>
@@ -178,3 +201,4 @@
 </script>
 <script src="../../js/theme-manager.js"></script>
 </body>
+</html>

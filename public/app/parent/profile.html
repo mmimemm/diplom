@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <style>
-    .avatar-builder { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0; }
+    .avatar-builder { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0; justify-content:center; }
     .avatar-opt {
       width:52px; height:52px; border-radius:14px; border:3px solid transparent;
       background:var(--bg); display:flex; align-items:center; justify-content:center;
@@ -18,11 +18,37 @@
     .avatar-opt.selected { border-color:var(--accent); background:rgba(153,0,255,0.1); }
     .avatar-opt:hover { transform:scale(1.1); }
     .avatar-preview {
-      width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,var(--accent-light),var(--accent));
-      display:flex; align-items:center; justify-content:center; font-size:3rem;
+      width:100px !important; height:100px !important; max-width:100px;
+      border-radius:50%; background:linear-gradient(135deg,var(--accent-light),var(--accent));
+      display:flex; align-items:center; justify-content:center; font-size:2.8rem;
       margin:0 auto 16px; box-shadow:0 4px 20px rgba(153,0,255,0.3);
+      animation: avatarPulse 3s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    .avatar-card { max-width: 380px; margin: 0 auto; }
+    @keyframes avatarPulse {
+      0%,100% { box-shadow: 0 4px 20px rgba(153,0,255,0.3); }
+      50% { box-shadow: 0 4px 30px rgba(153,0,255,0.45); }
     }
     .section-label { font-weight:700; font-size:0.9rem; color:#888; margin:12px 0 6px; }
+
+    /* Адаптивный грид профиля */
+    .profile-settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media(max-width: 992px) {
+      .profile-settings-grid { grid-template-columns: 1fr; }
+    }
+    @media(max-width: 768px) {
+      .avatar-preview { width: 90px; height: 90px; font-size: 2.2rem; }
+      .avatar-opt { width: 44px; height: 44px; font-size: 1.3rem; }
+    }
+    @media(max-width: 480px) {
+      .avatar-preview { width: 90px; height: 90px; font-size: 2.2rem; }
+      .avatar-opt { width: 38px; height: 38px; font-size: 1.1rem; }
+    }
   </style>
 </head>
 <body>
@@ -43,7 +69,7 @@
 </aside>
 <main class="main-content">
   <div class="topbar">
-    <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
+    <button id="sidebarToggle">☰</button>
     <h1>👤 Мой профиль</h1>
     <div class="topbar-right">
       <button class="sound-btn" id="soundBtn">🔊</button>
@@ -52,9 +78,9 @@
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+  <div class="profile-settings-grid">
     <!-- Аватар-конструктор -->
-    <div class="content-card">
+    <div class="content-card avatar-card">
       <h2>🎨 Мой аватар</h2>
       <div class="avatar-preview" id="avatarPreview">😺</div>
 
@@ -124,7 +150,6 @@
   <script src="../../js/shop-effects.js"></script>
   <script src="../../js/theme-manager.js"></script>
   <script>
-    // Принимаем родителя, но не ограничиваем — подходит всем
     requireAuth(['parent']);
 
   let currentConfig = { hair:'default' };
@@ -140,7 +165,7 @@
       return;
     }
 
-    // Определяем эмодзи: приоритет shop-предмета (единый реестр AVATAR_EFFECTS)
+    // Определяем эмодзи
     let emoji = '😊';
     var unlocked = currentConfig.unlockedItems || [];
     if (unlocked.length > 0) {
@@ -149,7 +174,6 @@
       if (effectDef) {
         emoji = effectDef.icon;
       } else {
-        // Fallback: ищем в shopEffects.avatarItems
         var effects = window.shopEffects;
         if (effects && effects.avatarItems) {
           var matched = effects.avatarItems.find(function(it) { return it.effect === lastEffect; });
@@ -187,7 +211,7 @@
         updatePreview();
         status.textContent = '✅ Фото загружено!';
         status.style.color = '#00aa44';
-        playSound('success');
+        if (typeof playSound === 'function') playSound('success');
       }
     } catch (e) {
       status.textContent = '❌ Ошибка загрузки';
@@ -204,14 +228,13 @@
     status.style.display = 'block';
     status.style.color = '#888';
     setTimeout(() => { status.style.display = 'none'; }, 2000);
-    playSound('click');
+    if (typeof playSound === 'function') playSound('click');
   }
 
   async function init() {
     userData = await api('/api/auth/me');
     if (!userData) return;
     
-    // Используем глобальную функцию из app.js
     if (typeof window.updateTopbarAvatar === 'function') {
       await window.updateTopbarAvatar(userData);
     } else {
@@ -234,23 +257,23 @@
       updatePreview();
     }
 
-    // Восстанавливаем тему из theme-manager
+    // Восстанавливаем тему
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme === 'dark' ? 'dark' : 'light');
     document.getElementById('themeToggle').checked = savedTheme === 'dark';
 
     // Звук
-    document.getElementById('soundToggle').checked = soundEnabled;
-    document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+    document.getElementById('soundToggle').checked = window.soundEnabled;
+    const soundBtn = document.getElementById('soundBtn');
+    if (soundBtn) soundBtn.textContent = window.soundEnabled ? '🔊' : '🔇';
   }
 
   async function saveAvatar() {
     const res = await api('/api/auth/me', { method: 'PATCH', body: JSON.stringify({ avatarConfig: currentConfig }) });
     if (res) { 
       showToast('Аватар сохранён! 🎨'); 
-      launchConfetti(); 
-      playSound('victory');
-      // Обновляем топбар — используем глобальную функцию
+      if (typeof launchConfetti === 'function') launchConfetti(); 
+      if (typeof playSound === 'function') playSound('victory');
       if (typeof window.updateTopbarAvatar === 'function') {
         await window.updateTopbarAvatar(res);
       }
@@ -265,14 +288,14 @@
         phone: document.getElementById('pPhone').value 
       })
     });
-    if (res) { showToast('Профиль сохранён ✅'); playSound('success'); }
+    if (res) { showToast('Профиль сохранён ✅'); if (typeof playSound === 'function') playSound('success'); }
   }
 
   function toggleTheme() {
     const isDark = document.getElementById('themeToggle').checked;
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    playSound('magic');
+    if (typeof playSound === 'function') playSound('magic');
     
     api('/api/auth/me', {
       method: 'PATCH',
@@ -280,11 +303,10 @@
     });
   }
 
-  // Загружаем предметы из магазина и показываем их в конструкторе аватара
+  // Загружаем предметы из магазина
   init().then(function() {
     if (typeof loadShopEffects === 'function') {
       loadShopEffects().then(function(effects) {
-        // Синхронизируем купленные аватары из магазина с currentConfig.unlockedItems
         if (effects && effects.avatarItems && effects.avatarItems.length > 0) {
           var unlocked = currentConfig.unlockedItems || [];
           var changed = false;
@@ -296,7 +318,6 @@
           });
           if (changed) {
             currentConfig.unlockedItems = unlocked;
-            // Сохраняем на сервер
             api('/api/auth/me', { method: 'PATCH', body: JSON.stringify({ avatarConfig: currentConfig }) });
           }
         }
@@ -305,7 +326,6 @@
           showShopAvatarItems('shopAvatarSection', currentConfig);
         }
         
-        // Обновляем превью и топбар после синхронизации
         updatePreview();
         if (typeof window.updateTopbarAvatar === 'function') {
           api('/api/auth/me').then(function(user) {
@@ -316,37 +336,30 @@
     }
   });
 
-  // Функция выбора предмета из магазина для аватара
   window.selectShopAvatarItem = function(item) {
     if (!item || !item.effect) return;
 
-    // Находим все предметы из магазина в UI
     document.querySelectorAll('#shopAvatarItems .avatar-opt').forEach(function(opt) {
       opt.classList.remove('selected');
     });
 
-    // Если эффект уже есть в unlockedItems — снимаем (toggle)
     var unlocked = currentConfig.unlockedItems || [];
     var idx = unlocked.indexOf(item.effect);
     if (idx >= 0) {
       unlocked.splice(idx, 1);
     } else {
-      // Добавляем в unlockedItems и подсвечиваем
       unlocked.push(item.effect);
       var target = document.querySelector('#shopAvatarItems .avatar-opt[data-effect="' + item.effect + '"]');
       if (target) target.classList.add('selected');
     }
     currentConfig.unlockedItems = unlocked;
-    // Убираем фото если выбрали магазинный предмет
     currentConfig.photo = null;
     updatePreview();
-    playSound('ding');
+    if (typeof playSound === 'function') playSound('ding');
 
-    // НЕМЕДЛЕННО сохраняем на сервер, чтобы при перезагрузке страницы выбор не пропал
     api('/api/auth/me', { method: 'PATCH', body: JSON.stringify({ avatarConfig: currentConfig }) });
   };
 
-  // Сохраняем currentConfig глобально, чтобы shop-effects.js мог его читать
   window.currentConfig = currentConfig;
 </script>
 </body>

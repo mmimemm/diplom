@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Связь с родителями — IT-MANIA</title>
   <link rel="icon" href="../../images/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="../../css/app.css">
@@ -17,35 +17,31 @@
       transition: var(--transition);
     }
     .parent-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .parent-card:active { transform: scale(0.98); }
     .message-box {
       background: var(--bg);
       border-radius: 16px;
       padding: 16px;
       margin: 12px 0;
-      max-height: 200px;
+      max-height: 300px;
       overflow-y: auto;
     }
     .message-item {
       padding: 8px 0;
       border-bottom: 1px solid rgba(0,0,0,0.08);
+      animation: fadeInUp 0.3s ease both;
     }
-    .message-sender {
-      font-weight: 700;
-      font-size: 0.9rem;
-    }
-    .message-text {
-      font-size: 0.85rem;
-      color: #444;
-      margin-top: 2px;
-    }
-    .message-time {
-      font-size: 0.75rem;
-      color: #888;
-      text-align: right;
-    }
+    .message-sender { font-weight: 700; font-size: 0.9rem; }
+    .message-text { font-size: 0.85rem; color: #444; margin-top: 2px; }
+    .message-time { font-size: 0.75rem; color: #888; text-align: right; }
+    .chat-input-row { display:flex; gap:8px; }
+    @media(max-width:768px) { .chat-input-row { flex-direction:column; } .chat-input-row input { width:100% !important; } }
+    @media(max-width:480px) { .parent-card { padding:14px 16px; } }
   </style>
 </head>
 <body>
+<div class="page-loader"></div>
+
 <aside class="sidebar">
   <div class="sidebar-logo">
     <img src="../../images/star.gif?v=3" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'">
@@ -65,7 +61,7 @@
 <main class="main-content">
   <div class="topbar">
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
-    <h1>👨‍👩‍👧‍👦 Связь с родителями</h1>
+    <h1 class="greeting-text">👨‍👩‍👧‍👦 Связь с родителями</h1>
     <div class="topbar-right">
       <button class="sound-btn" id="soundBtn">🔊</button>
       <button class="notif-btn" onclick="openNotifPanel()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
@@ -74,9 +70,9 @@
   </div>
 
   <div class="stats-grid" style="margin-bottom:16px;">
-    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-info"><h3 id="parentsCount">0</h3><p>Родителей в группе</p></div></div>
-    <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-info"><h3 id="unreadCount">0</h3><p>Новых сообщений</p></div></div>
-    <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-info"><h3 id="progressAvg">0%</h3><p>Средний прогресс</p></div></div>
+    <div class="stat-card stat-anim"><div class="stat-icon">👥</div><div class="stat-info"><h3 id="parentsCount">0</h3><p>Родителей в группе</p></div></div>
+    <div class="stat-card stat-anim"><div class="stat-icon">💬</div><div class="stat-info"><h3 id="unreadCount">0</h3><p>Новых сообщений</p></div></div>
+    <div class="stat-card stat-anim"><div class="stat-icon">📊</div><div class="stat-info"><h3 id="progressAvg">0%</h3><p>Средний прогресс</p></div></div>
   </div>
 
   <div class="content-card">
@@ -94,9 +90,9 @@
       <!-- Сообщения будут здесь -->
     </div>
     
-    <div style="display:flex;gap:8px;">
+    <div class="chat-input-row">
       <input id="messageText" type="text" placeholder="Напишите сообщение..."
-        style="flex:1;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+        style="flex:1;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')sendMessage()">
       <button onclick="sendMessage()"
         style="background:var(--accent);color:white;border:none;border-radius:20px;padding:10px 24px;font-weight:700;cursor:pointer;">
         Отправить
@@ -110,7 +106,13 @@
   <img src="../../images/cat.png" alt="Кот">
 </div>
 
+<div id="notifPanel" style="display:none;">
+  <div style="display:flex;justify-content:space-between;margin-bottom:12px;"><b>Уведомления</b><button onclick="this.parentElement.parentElement.style.display='none'" style="background:none;border:none;cursor:pointer;">✕</button></div>
+  <div id="notifList"></div>
+</div>
+
 <script src="../../js/app.js"></script>
+<script src="../../js/app-enhancements.js"></script>
 <script>
   requireAuth(['teacher', 'admin']);
 
@@ -132,7 +134,6 @@
     const parents = await api('/api/teacher/parents') || [];
     document.getElementById('parentsCount').textContent = parents.length;
     
-    // Считаем прогресс
     let totalProgress = 0;
     parents.forEach(p => {
       if (p.children && p.children.length) {
@@ -142,12 +143,7 @@
     document.getElementById('progressAvg').textContent = parents.length ? Math.round(totalProgress / parents.length) + ' XP' : '0 XP';
     
     if (!parents.length) {
-      document.getElementById('parentsList').innerHTML = `
-        <div style="text-align:center;padding:40px;">
-          <div style="font-size:3rem;margin-bottom:12px;">👥</div>
-          <p style="font-weight:700;font-size:1.1rem;">Нет родителей в группе</p>
-          <p style="color:#888;">Родители появятся здесь, когда ученики будут добавлены в вашу группу</p>
-        </div>`;
+      document.getElementById('parentsList').innerHTML = `<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-title">Нет родителей в группе</div><div class="empty-state-desc">Родители появятся здесь, когда ученики будут добавлены в вашу группу</div></div>`;
       return;
     }
     
@@ -157,8 +153,8 @@
       ).join(', ');
       
       return `
-      <div class="parent-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="parent-card stagger-item">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
           <div>
             <div style="font-weight:800;font-size:1rem;">${escHtml(parent.firstName || '')} ${escHtml(parent.lastName || '')}</div>
             <div style="color:#888;font-size:0.85rem;">${childrenStr ? 'Дети: ' + childrenStr : 'Нет привязанных детей'}</div>
@@ -178,6 +174,7 @@
     document.getElementById('parentsList').style.display = 'none';
     document.getElementById('chatSection').style.display = 'block';
     document.getElementById('chatTitle').textContent = `💬 ${parentName}`;
+    playSound('open');
     
     await loadMessages();
   }
@@ -187,6 +184,7 @@
     document.getElementById('parentsList').style.display = 'block';
     document.getElementById('chatSection').style.display = 'none';
     document.getElementById('messageText').value = '';
+    playSound('close');
   }
 
   async function loadMessages() {
@@ -230,7 +228,17 @@
   }
 
   function openNotifPanel() {
-    showToast('Уведомления загружаются...', 'info');
+    const panel = document.getElementById('notifPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    playSound('open');
+    if (panel.style.display === 'block') {
+      loadNotifications().then(notes => {
+        document.getElementById('notifList').innerHTML = notes?.length
+          ? notes.map(n => `<div style="padding:8px 0;border-bottom:1px solid #f0e8ff;font-size:0.85rem;"><b>${n.text}</b><div style="color:#aaa;font-size:0.75rem;">${new Date(n.createdAt).toLocaleDateString('ru')}</div></div>`).join('')
+          : '<p style="color:#888;text-align:center;">Нет уведомлений</p>';
+        api('/api/notifications/read', { method: 'PATCH' });
+      });
+    }
   }
 
   function escHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>'); }

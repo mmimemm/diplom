@@ -2,30 +2,31 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Профиль — IT-MANIA</title>
   <link rel="icon" href="../../images/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="../../css/app.css">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <style>
-    .avatar-builder { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0; }
-    .avatar-opt {
-      width:52px; height:52px; border-radius:14px; border:3px solid transparent;
-      background:var(--bg); display:flex; align-items:center; justify-content:center;
-      font-size:1.6rem; cursor:pointer; transition:0.3s;
-    }
-    .avatar-opt.selected { border-color:var(--accent); background:rgba(153,0,255,0.1); }
-    .avatar-opt:hover { transform:scale(1.1); }
     .avatar-preview {
-      width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,var(--accent-light),var(--accent));
-      display:flex; align-items:center; justify-content:center; font-size:3rem;
+      width:100px !important; height:100px !important; max-width:100px;
+      border-radius:50%; background:linear-gradient(135deg,var(--accent-light),var(--accent));
+      display:flex; align-items:center; justify-content:center; font-size:2.8rem;
       margin:0 auto 16px; box-shadow:0 4px 20px rgba(153,0,255,0.3);
+      flex-shrink: 0;
     }
+    .avatar-card { max-width: 380px; margin: 0 auto; }
     .section-label { font-weight:700; font-size:0.9rem; color:#888; margin:12px 0 6px; }
+    .profile-grid { display:grid;grid-template-columns:1fr 1fr;gap:20px; }
+    @media(max-width:992px) { .profile-grid { grid-template-columns:1fr; } }
+    @media(max-width:768px) { .avatar-preview { width:90px;height:90px;font-size:2.2rem; } }
+    @media(max-width:480px) { .profile-grid { gap:12px; } }
   </style>
 </head>
 <body>
+<div class="page-loader"></div>
+
 <aside class="sidebar">
   <div class="sidebar-logo">
     <img src="../../images/star.gif?v=2" alt="IT-MANIA" onerror="this.onerror=null; this.src='../../images/star.png'"">
@@ -45,7 +46,7 @@
 <main class="main-content">
   <div class="topbar">
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
-    <h1>👤 Мой профиль</h1>
+    <h1 class="greeting-text">👤 Мой профиль</h1>
     <div class="topbar-right">
       <button class="sound-btn" id="soundBtn">🔊</button>
       <button class="notif-btn" onclick="toggleNotif()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
@@ -53,13 +54,11 @@
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-    <!-- Аватар-конструктор -->
-    <div class="content-card">
+  <div class="profile-grid">
+    <!-- Аватар -->
+    <div class="content-card avatar-card">
       <h2>🎨 Мой аватар</h2>
       <div class="avatar-preview" id="avatarPreview">😺</div>
-
-      <!-- Загрузка фото -->
       <div class="section-label">📷 Загрузить фото</div>
       <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
         <label style="background:var(--accent);color:white;padding:10px 20px;border-radius:30px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:0.9rem;">
@@ -82,10 +81,10 @@
         <div id="profileInfo" style="margin-bottom:16px;"></div>
         <div class="section-label">Email</div>
         <input id="pEmail" type="email" placeholder="your@email.com"
-          style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:10px;">
+          style="width:100%;border:2px solid var(--input-border);border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:10px;background:var(--input-bg);color:var(--text-dark);">
         <div class="section-label">Телефон</div>
         <input id="pPhone" type="tel" placeholder="+7 (999) 000-00-00"
-          style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:16px;">
+          style="width:100%;border:2px solid var(--input-border);border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:16px;background:var(--input-bg);color:var(--text-dark);">
         <button onclick="saveProfile()" class="btn-accent" style="width:100%;border-radius:20px;padding:12px;">
           Сохранить
         </button>
@@ -119,9 +118,9 @@
 </div>
 
   <script src="../../js/app.js"></script>
+  <script src="../../js/app-enhancements.js"></script>
   <script src="../../js/theme-manager.js"></script>
   <script>
-    // Принимаем учителя
     requireAuth(['teacher']);
 
   let currentConfig = { hair:'default' };
@@ -131,13 +130,11 @@
     const preview = document.getElementById('avatarPreview');
     if (!preview) return;
     
-    // Если есть фото — показываем его
     if (currentConfig.photo) {
       preview.innerHTML = `<img src="${currentConfig.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
       return;
     }
 
-    // Определяем эмодзи
     let emoji = '😊';
     var unlocked = currentConfig.unlockedItems || [];
     if (unlocked.length > 0) {
@@ -201,7 +198,6 @@
     userData = await api('/api/auth/me');
     if (!userData) return;
     
-    // Используем глобальную функцию из app.js
     if (typeof window.updateTopbarAvatar === 'function') {
       await window.updateTopbarAvatar(userData);
     } else {
@@ -218,18 +214,15 @@
         <div><span style="color:#888;font-size:0.85rem;">Роль:</span> <b>Преподаватель</b></div>
       </div>`;
 
-    // Восстанавливаем аватар
     if (userData.avatarConfig) {
       currentConfig = { ...currentConfig, ...userData.avatarConfig };
       updatePreview();
     }
 
-    // Восстанавливаем тему из theme-manager
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme === 'dark' ? 'dark' : 'light');
     document.getElementById('themeToggle').checked = savedTheme === 'dark';
 
-    // Звук
     document.getElementById('soundToggle').checked = soundEnabled;
     document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
   }
@@ -238,9 +231,8 @@
     const res = await api('/api/auth/me', { method: 'PATCH', body: JSON.stringify({ avatarConfig: currentConfig }) });
     if (res) { 
       showToast('Аватар сохранён! 🎨'); 
-      launchConfetti(); 
       playSound('victory');
-      // Обновляем топбар — используем глобальную функцию
+      launchConfetti();
       if (typeof window.updateTopbarAvatar === 'function') {
         await window.updateTopbarAvatar(res);
       }
@@ -271,17 +263,18 @@
   }
 
   async function toggleNotif() {
-    const panel = document.getElementById('notifPanel');
+    let panel = document.getElementById('notifPanel');
     if (!panel) {
-      const p = document.createElement('div');
-      p.id = 'notifPanel';
-      p.style.cssText = 'position:fixed;top:80px;right:24px;width:300px;background:white;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:500;padding:20px;max-height:400px;overflow-y:auto;display:block;';
-      p.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:12px;"><b>Уведомления</b><button onclick="toggleNotif()" style="background:none;border:none;cursor:pointer;">✕</button></div><div id="notifList"><p style="color:#888;text-align:center;">Загрузка...</p></div>';
-      document.body.appendChild(p);
+      panel = document.createElement('div');
+      panel.id = 'notifPanel';
+      panel.className = 'notif-panel';
+      panel.style.cssText = 'display:none;position:fixed;top:80px;right:24px;width:300px;background:white;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:500;padding:20px;max-height:400px;overflow-y:auto;';
+      panel.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:12px;"><b>Уведомления</b><button onclick="toggleNotif()" style="background:none;border:none;cursor:pointer;">✕</button></div><div id="notifList"><p style="color:#888;text-align:center;">Загрузка...</p></div>';
+      document.body.appendChild(panel);
     }
-    const panel2 = document.getElementById('notifPanel');
-    const isOpen = panel2.style.display === 'block';
-    panel2.style.display = isOpen ? 'none' : 'block';
+    const isOpen = panel.style.display === 'block';
+    panel.style.display = isOpen ? 'none' : 'block';
+    playSound('open');
     if (!isOpen) {
       const notes = await loadNotifications();
       document.getElementById('notifList').innerHTML = notes?.length

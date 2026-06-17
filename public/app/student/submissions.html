@@ -31,14 +31,16 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      word-break: break-word;
     }
     .submission-meta {
       display: flex;
-      gap: 16px;
+      gap: 10px;
       flex-wrap: wrap;
       font-size: 0.85rem;
       color: #888;
       margin-bottom: 10px;
+      word-break: break-word;
     }
     .submission-meta span { display: flex; align-items: center; gap: 4px; }
     .status-badge {
@@ -76,6 +78,7 @@
       font-size: 0.9rem;
       line-height: 1.5;
       color: var(--text-dark);
+      word-break: break-word;
     }
     .teacher-response-box .tr-meta {
       font-size: 0.8rem;
@@ -167,6 +170,22 @@
     @media (max-width: 768px) {
       .submission-header { flex-direction: column; gap: 8px; align-items: flex-start; }
     }
+    @media (max-width: 480px) {
+      .submission-header { flex-direction: column; align-items: flex-start; }
+      .submission-card { padding: 10px 12px; }
+      .submission-title { font-size: 0.85rem; }
+      .submission-meta { font-size: 0.78rem; }
+      .teacher-response-box { padding: 12px 14px; }
+      .status-badge { font-size: 0.72rem; padding: 3px 10px; }
+      .score-circle { width: 40px; height: 40px; font-size: 0.8rem; }
+      .filter-tab, .expand-btn { min-height: 44px; }
+    }
+    @media (max-width: 360px) {
+      .filter-tabs { gap: 4px; }
+      .filter-tab { padding: 5px 10px; font-size: 0.72rem; }
+      .score-circle { width: 32px; height: 32px; font-size: 0.7rem; }
+    }
+    .submission-card, .content-card, .main-content, .stats-grid, .filter-tabs { width: 100% !important; max-width: 100% !important; }
   </style>
 </head>
 <body>
@@ -191,8 +210,8 @@
   </div>
 </aside>
 
-<main class="main-content" style="padding:16px;">
-  <div class="topbar" style="margin-bottom:16px;">
+  <main class="main-content">
+  <div class="topbar scroll-anim scroll-anim-fade-up" style="margin-bottom:16px;">
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
     <h1>📋 Выполненные задания</h1>
     <div class="topbar-right">
@@ -202,7 +221,7 @@
   </div>
 
   <!-- Фильтры -->
-  <div class="filter-tabs">
+  <div class="filter-tabs scroll-anim scroll-anim-fade-up">
     <button class="filter-tab active" onclick="filterSubs('all', this)">Все<span class="count" id="countAll">0</span></button>
     <button class="filter-tab" onclick="filterSubs('passed', this)">✅ Сдано<span class="count" id="countPassed">0</span></button>
     <button class="filter-tab" onclick="filterSubs('pending', this)">⏳ На проверке<span class="count" id="countPending">0</span></button>
@@ -210,7 +229,7 @@
   </div>
 
   <!-- Статистика -->
-  <div class="stats-grid" style="margin-bottom:20px;">
+  <div class="stats-grid scroll-anim scroll-anim-fade-up" style="margin-bottom:20px;">
     <div class="stat-card">
       <div class="stat-icon">📤</div>
       <div class="stat-info"><h3 id="statTotal">0</h3><p>Всего сдано</p></div>
@@ -230,7 +249,7 @@
   </div>
 
   <!-- Список -->
-  <div id="submissionsList">
+    <div id="submissionsList" class="stagger-container">
     <p style="text-align:center;color:#888;padding:40px;">Загрузка...</p>
   </div>
 </main>

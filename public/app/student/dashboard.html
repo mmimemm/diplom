@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Мой кабинет — IT-MANIA</title>
   <link rel="icon" href="../../images/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="../../css/app.css">
@@ -29,8 +29,8 @@
       font-size: 4rem;
       opacity: 0.2;
     }
-    .welcome-banner h2 { font-size: 1.4rem; font-weight: 900; margin-bottom: 4px; }
-    .welcome-banner p { opacity: 0.85; font-size: 0.9rem; }
+    .welcome-banner h2 { font-size: 1.4rem; font-weight: 900; margin-bottom: 4px; word-break: break-word; }
+    .welcome-banner p { opacity: 0.85; font-size: 0.9rem; word-break: break-word; }
     .level-badge {
       background: rgba(255,255,255,0.2);
       border-radius: 30px;
@@ -38,6 +38,7 @@
       font-weight: 800;
       font-size: 0.95rem;
       white-space: nowrap;
+      flex-shrink: 0;
     }
     .quick-actions {
       display: grid;
@@ -63,12 +64,15 @@
     }
     .quick-btn:hover { transform: translateY(-4px); box-shadow: var(--shadow); color: var(--accent); }
     .quick-btn .q-icon { font-size: 1.8rem; }
+    @media (hover: none) {
+      .quick-btn { min-height: 44px; }
+    }
     .notif-panel {
       position: fixed;
       top: 80px;
       right: 24px;
       width: 320px;
-      background: white;
+      background: var(--white);
       border-radius: 20px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.15);
       z-index: 500;
@@ -77,13 +81,48 @@
       overflow-y: auto;
       display: none;
     }
+    .content-card {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box;
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    .stats-grid { margin-bottom: 20px; width: 100% !important; max-width: 100% !important; }
+    .quick-actions { width: 100% !important; max-width: 100% !important; }
+    .welcome-banner { width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
+    /* Адаптивность */
+    @media (max-width: 1100px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
     @media (max-width: 768px) {
-      .quick-actions { grid-template-columns: repeat(2, 1fr); }
-      .welcome-banner { flex-direction: column; gap: 12px; text-align: center; }
-      .notif-panel { right: 12px; width: calc(100vw - 24px); }
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .quick-actions { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .quick-btn { padding: 14px 10px; }
+      .welcome-banner { flex-direction: column; gap: 12px; text-align: center; padding: 20px; align-items: stretch; }
+      .welcome-banner h2 { font-size: 1.1rem; }
+      .notif-panel { right: 12px; width: calc(100vw - 24px); top: 70px; }
     }
     @media (max-width: 480px) {
-      .quick-actions { grid-template-columns: repeat(2, 1fr); }
+      .quick-actions { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .quick-btn { padding: 12px 8px; font-size: 0.75rem; }
+      .quick-btn .q-icon { font-size: 1.4rem; }
+      .welcome-banner { padding: 16px; }
+      .welcome-banner h2 { font-size: 1rem; }
+      .welcome-banner .level-badge { align-self: center; }
+      .level-badge { font-size: 0.8rem; padding: 6px 14px; }
+      .dashboard-grid { gap: 12px; }
+      .stats-grid { margin-bottom: 12px; }
+    }
+    @media (max-width: 360px) {
+      .quick-actions { grid-template-columns: 1fr 1fr; gap: 6px; }
+      .quick-btn { padding: 10px 6px; font-size: 0.7rem; }
+      .quick-btn .q-icon { font-size: 1.2rem; }
     }
   </style>
 </head>
@@ -95,7 +134,7 @@
     <span>IT-MANIA</span>
   </div>
   <a href="dashboard.html" class="active"><span class="icon">🏠</span> Главная</a>
-  <a href="lessons.html" ><span class="icon">📚</span> Мои уроки</a>
+  <a href="lessons.html"><span class="icon">📚</span> Мои уроки</a>
   <a href="progress-map.html"><span class="icon">🗺️</span> Карта прогресса</a>
   <a href="submissions.html"><span class="icon">📋</span> Задания</a>
   <a href="chat.html"><span class="icon">💬</span> Чаты</a>
@@ -110,7 +149,7 @@
 </aside>
 
 <main class="main-content">
-  <div class="topbar">
+  <div class="topbar scroll-anim scroll-anim-fade-up">
     <button id="sidebarToggle">☰</button>
     <h1 id="greetingText">Привет! 👋</h1>
     <div class="topbar-right">
@@ -123,7 +162,7 @@
   </div>
 
   <!-- Баннер приветствия -->
-  <div class="welcome-banner" id="welcomeBanner">
+  <div class="welcome-banner scroll-anim scroll-anim-fade-up" id="welcomeBanner">
     <div>
       <h2 id="bannerName">Добро пожаловать!</h2>
       <p id="bannerSub">Готов к новым знаниям сегодня?</p>
@@ -132,7 +171,7 @@
   </div>
 
   <!-- Статистика -->
-  <div class="stats-grid">
+  <div class="stats-grid scroll-anim scroll-anim-fade-up">
     <div class="stat-card">
       <div class="stat-icon">⭐</div>
       <div class="stat-info"><h3 id="statXP">0</h3><p>Очки XP</p></div>
@@ -152,8 +191,8 @@
   </div>
 
   <!-- XP прогресс -->
-  <div class="content-card" style="padding:16px 20px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+  <div class="content-card scroll-anim scroll-anim-fade-up">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:4px;">
       <span style="font-weight:700;font-size:0.95rem;" id="levelLabel">Уровень 1 — Новичок</span>
       <span style="color:#888;font-size:0.8rem;" id="xpLabel">0 / 500 XP</span>
     </div>
@@ -161,14 +200,14 @@
   </div>
 
   <!-- Быстрые действия -->
-  <div class="quick-actions">
+  <div class="quick-actions scroll-anim scroll-anim-fade-up">
     <a href="lessons.html" class="quick-btn"><div class="q-icon">📚</div>Уроки</a>
     <a href="progress-map.html" class="quick-btn"><div class="q-icon">🗺️</div>Карта</a>
     <a href="sandbox.html" class="quick-btn"><div class="q-icon">🧪</div>Песочница</a>
     <a href="shop.html" class="quick-btn"><div class="q-icon">🎪</div>Магазин</a>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+  <div class="dashboard-grid scroll-anim scroll-anim-fade-up">
     <!-- Текущий курс -->
     <div class="content-card">
       <h2>📚 Мой курс</h2>
@@ -194,7 +233,7 @@
   </div>
 
   <!-- Задания на проверке -->
-  <div class="content-card">
+  <div class="content-card scroll-anim scroll-anim-fade-up">
     <h2>⏳ Мои задания</h2>
     <div id="mySubmissions"><p style="color:#888;text-align:center;padding:16px;">Загрузка...</p></div>
   </div>
@@ -203,7 +242,7 @@
 <!-- Кот -->
 <div id="cat-assistant">
   <div class="cat-bubble" id="catBubble"></div>
-  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+  <img src="../../images/mini.png" alt="Кот" loading="lazy" onerror="this.onerror=null; this.src='../../images/cat.png'">
 </div>
 
 <!-- Уведомления -->
@@ -218,6 +257,7 @@
 <script src="../../js/theme-manager.js"></script>
 <script src="../../js/app.js"></script>
 <script src="../../js/shop-effects.js"></script>
+<script src="../../js/app-enhancements.js"></script>
 <script>
   requireAuth(['student']);
   let userData = null;
@@ -246,9 +286,11 @@
     document.getElementById('statTickets').textContent = userData.tickets || 0;
     document.getElementById('statBadges').textContent = userData.badges?.length || 0;
 
-    // XP бар
+    // XP бар с анимацией
     const xpInLevel = (userData.xp || 0) % 500;
-    document.getElementById('xpBar').style.width = (xpInLevel / 500 * 100) + '%';
+    setTimeout(() => {
+      document.getElementById('xpBar').style.width = (xpInLevel / 500 * 100) + '%';
+    }, 300);
     document.getElementById('xpLabel').textContent = `${xpInLevel} / 500 XP`;
     document.getElementById('levelLabel').textContent = `Уровень ${lvl} — ${lvlName}`;
 
@@ -296,7 +338,6 @@
   }
 
   async function loadMySubmissions() {
-    // Показываем последние задания ученика
     const el = document.getElementById('mySubmissions');
     el.innerHTML = `
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -344,7 +385,6 @@
       panel.style.display = 'none';
     }
   });
-
 
   // === РАСПИСАНИЕ ===
   async function loadSchedule() {

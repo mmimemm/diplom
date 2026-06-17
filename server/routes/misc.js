@@ -404,20 +404,33 @@ router.get('/user/:id', auth, async (req, res) => {
 
 // === ЧАТ РОДИТЕЛЯ С ПРЕПОДАВАТЕЛЕМ РЕБЁНКА ===
 // Получить сообщения (родитель — преподаватель ребёнка)
-// Ищем учителя через группу ребёнка
+// Ищем учителя через группу ребёнка ИЛИ напрямую через teacherId ученика
 router.get('/parent/teacher-chat/:childId', auth, role('parent', 'admin'), async (req, res) => {
   try {
     const Group = require('../models/Group');
-    const child = await User.findById(req.params.childId).select('groupId');
-    if (!child?.groupId) return res.json([]);
-    const group = await Group.findById(child.groupId).select('teacherId');
-    if (!group?.teacherId) return res.json([]);
+    const child = await User.findById(req.params.childId).select('groupId teacherId');
+    if (!child) return res.json([]);
 
+    // Пробуем получить teacherId несколькими способами
+    let teacherId = null;
+
+    // 1. Через группу
+    if (child.groupId) {
+      const group = await Group.findById(child.groupId).select('teacherId');
+      if (group?.teacherId) teacherId = group.teacherId;
+    }
+
+    // 2. Напрямую из teacherId ученика
+    if (!teacherId && child.teacherId) {
+      teacherId = child.teacherId;
+    }
+
+    if (!teacherId) return res.json([]);
+
+    // Оба направления (родитель->учитель и учитель->родитель) сохраняются с studentId=родитель, teacherId=учитель
     const messages = await ChatMessage.find({
-      $or: [
-        { studentId: req.user.id, teacherId: group.teacherId },
-        { studentId: group.teacherId, teacherId: req.user.id }
-      ]
+      studentId: req.user.id,
+      teacherId: teacherId
     }).sort('createdAt').limit(100);
 
     res.json(messages);

@@ -7,6 +7,21 @@
   <link rel="icon" href="../../images/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="../../css/app.css">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  textarea, input {
+    box-sizing: border-box;
+    width: 100%;
+  }
+  @media (max-width: 480px) {
+    .content-card { padding: 12px !important; }
+    #tSubject, #tMessage { padding: 8px 12px !important; font-size: 0.9rem !important; }
+    .btn-accent { width: 100%; }
+  }
+  @media (max-width: 360px) {
+    #tSubject, #tMessage { padding: 6px 10px !important; font-size: 0.85rem !important; }
+  }
+  .content-card, .main-content { width: 100% !important; max-width: 100% !important; }
+</style>
 </head>
 <body>
 <aside class="sidebar">
@@ -29,7 +44,7 @@
   </div>
 </aside>
 <main class="main-content">
-  <div class="topbar">
+  <div class="topbar scroll-anim scroll-anim-fade-up">
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
     <h1>🎫 Мои обращения</h1>
     <div class="topbar-right">
@@ -40,7 +55,7 @@
   </div>
 
   <!-- Новое обращение -->
-  <div class="content-card">
+  <div class="content-card scroll-anim scroll-anim-fade-up">
     <h2>✉️ Новое обращение</h2>
     <input id="tSubject" type="text" placeholder="Тема обращения"
       style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:10px;">
@@ -52,7 +67,7 @@
   </div>
 
   <!-- Мои тикеты -->
-  <div class="content-card">
+  <div class="content-card scroll-anim scroll-anim-fade-up">
     <h2>Мои обращения</h2>
     <div id="myTickets"><p style="color:#888;text-align:center;padding:20px;">Загрузка...</p></div>
   </div>

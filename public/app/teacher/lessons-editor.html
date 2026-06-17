@@ -2,14 +2,28 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Конструктор уроков — IT-MANIA</title>
   <link rel="icon" href="../../images/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="../../css/app.css">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+  <style>
+    .tab-btn { padding:8px 20px;border-radius:30px;border:2px solid var(--accent);background:none;color:var(--accent);font-weight:700;cursor:pointer;font-family:inherit;transition:0.3s; }
+    .tab-btn.active { background:var(--accent);color:white; }
+    .tab-btn:hover { background:rgba(153,0,255,0.08); }
+    .lesson-item-btn { display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;cursor:pointer;transition:0.3s;border:none;background:none;width:100%;text-align:left;font-family:inherit;font-size:0.9rem;font-weight:600; }
+    .lesson-item-btn:hover { background:var(--bg); }
+    .lesson-item-btn:active { transform:scale(0.97); }
+    .editor-grid { display:grid;grid-template-columns:300px 1fr;gap:20px; }
+    @media(max-width:992px) { .editor-grid { grid-template-columns:1fr; } }
+    @media(max-width:768px) { .editor-grid { grid-template-columns:1fr; } }
+    @media(max-width:480px) { .tab-btn { padding:6px 14px;font-size:0.85rem; } }
+  </style>
 </head>
 <body>
+<div class="page-loader"></div>
+
 <aside class="sidebar">
   <div class="sidebar-logo">
     <img src="../../images/star.gif?v=3" alt="IT-MANIA" onerror="this.onerror=null; this.onerror=null; this.src='../../images/star.png'">
@@ -29,20 +43,20 @@
 <main class="main-content">
   <div class="topbar">
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
-    <h1>✏️ Конструктор уроков</h1>
+    <h1 class="greeting-text">✏️ Конструктор уроков</h1>
     <div class="topbar-right">
       <button class="sound-btn" id="soundBtn">🔊</button>
       <div class="user-avatar" id="userAvatar">?</div>
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;">
+  <div class="editor-grid">
     <!-- Левая панель: выбор модуля -->
     <div>
       <div class="content-card">
         <h2>Модуль</h2>
         <select id="moduleSelect" onchange="loadLessons()"
-          style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 14px;font-family:inherit;outline:none;margin-bottom:12px;">
+          style="width:100%;border:2px solid var(--input-border);border-radius:20px;padding:10px 14px;font-family:inherit;outline:none;margin-bottom:12px;background:var(--input-bg);color:var(--text-dark);">
           <option value="">Выберите модуль</option>
         </select>
         <div id="lessonsList"></div>
@@ -59,22 +73,22 @@
     <div id="lessonEditor" style="display:none;">
       <div class="content-card">
         <h2 id="editorTitle">Новый урок</h2>
-        <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;margin-bottom:16px;">
+        <div class="lesson-inputs" style="display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;margin-bottom:16px;">
           <input id="lTitle" type="text" placeholder="Название урока *"
-            style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+            style="border:2px solid var(--input-border);border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;background:var(--input-bg);color:var(--text-dark);">
           <select id="lLang"
-            style="border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+            style="border:2px solid var(--input-border);border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;background:var(--input-bg);color:var(--text-dark);">
             <option value="javascript">JavaScript</option>
             <option value="python">Python</option>
             <option value="html">HTML</option>
             <option value="css">CSS</option>
           </select>
           <input id="lXP" type="number" value="50" placeholder="XP"
-            style="border:2px solid #eee;border-radius:20px;padding:10px 14px;font-family:inherit;outline:none;text-align:center;">
+            style="border:2px solid var(--input-border);border-radius:20px;padding:10px 14px;font-family:inherit;outline:none;background:var(--input-bg);color:var(--text-dark);text-align:center;">
         </div>
 
         <!-- Вкладки -->
-        <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
           <button class="tab-btn active" onclick="switchEditorTab('theory',this)">📖 Теория</button>
           <button class="tab-btn" onclick="switchEditorTab('practice',this)">💻 Практика</button>
         </div>
@@ -83,17 +97,17 @@
         <div id="editorTheory">
           <label style="font-weight:700;font-size:0.9rem;display:block;margin-bottom:6px;">Содержание урока (HTML)</label>
           <textarea id="lTheory" rows="8" placeholder="<h3>Заголовок</h3><p>Текст урока...</p>"
-            style="width:100%;border:2px solid #eee;border-radius:16px;padding:12px 16px;font-family:monospace;outline:none;resize:vertical;font-size:0.9rem;"></textarea>
+            style="width:100%;border:2px solid var(--input-border);border-radius:16px;padding:12px 16px;font-family:monospace;outline:none;resize:vertical;font-size:0.9rem;background:var(--input-bg);color:var(--text-dark);"></textarea>
           <label style="font-weight:700;font-size:0.9rem;display:block;margin:12px 0 6px;">Видео URL (необязательно)</label>
           <input id="lVideo" type="text" placeholder="https://youtube.com/..."
-            style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;">
+            style="width:100%;border:2px solid var(--input-border);border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;background:var(--input-bg);color:var(--text-dark);">
         </div>
 
         <!-- Практика -->
         <div id="editorPractice" style="display:none;">
           <label style="font-weight:700;font-size:0.9rem;display:block;margin-bottom:6px;">Описание задания</label>
           <textarea id="lPracticeDesc" rows="3" placeholder="Что нужно сделать..."
-            style="width:100%;border:2px solid #eee;border-radius:16px;padding:12px 16px;font-family:inherit;outline:none;resize:vertical;"></textarea>
+            style="width:100%;border:2px solid var(--input-border);border-radius:16px;padding:12px 16px;font-family:inherit;outline:none;resize:vertical;background:var(--input-bg);color:var(--text-dark);"></textarea>
           <label style="font-weight:700;font-size:0.9rem;display:block;margin:12px 0 6px;">Стартовый код</label>
           <div class="editor-wrap">
             <div class="editor-toolbar"><span id="editorLangLabel">JavaScript</span></div>
@@ -101,10 +115,10 @@
           </div>
           <label style="font-weight:700;font-size:0.9rem;display:block;margin:12px 0 6px;">Подсказки (каждая с новой строки)</label>
           <textarea id="lHints" rows="3" placeholder="Используй переменную let&#10;Не забудь console.log"
-            style="width:100%;border:2px solid #eee;border-radius:16px;padding:12px 16px;font-family:inherit;outline:none;resize:vertical;"></textarea>
+            style="width:100%;border:2px solid var(--input-border);border-radius:16px;padding:12px 16px;font-family:inherit;outline:none;resize:vertical;background:var(--input-bg);color:var(--text-dark);"></textarea>
         </div>
 
-        <div style="display:flex;gap:10px;margin-top:16px;">
+        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
           <button onclick="saveLesson()" class="btn-accent" style="border-radius:20px;padding:10px 28px;">
             💾 Сохранить урок
           </button>
@@ -122,14 +136,8 @@
   <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
 </div>
 
-<style>
-  .tab-btn { padding:8px 20px;border-radius:30px;border:2px solid var(--accent);background:none;color:var(--accent);font-weight:700;cursor:pointer;font-family:inherit;transition:0.3s; }
-  .tab-btn.active { background:var(--accent);color:white; }
-  .lesson-item-btn { display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;cursor:pointer;transition:0.3s;border:none;background:none;width:100%;text-align:left;font-family:inherit;font-size:0.9rem;font-weight:600; }
-  .lesson-item-btn:hover { background:var(--bg); }
-</style>
-
 <script src="../../js/app.js"></script>
+<script src="../../js/app-enhancements.js"></script>
 <script>
   requireAuth(['teacher', 'admin']);
   let monacoEditor = null;
@@ -189,6 +197,7 @@
     document.getElementById('lXP').value = '50';
     if (monacoEditor) monacoEditor.setValue('// Стартовый код\n');
     document.getElementById('lessonEditor').style.display = 'block';
+    playSound('open');
   }
 
   async function editLesson(id) {
@@ -205,11 +214,13 @@
     document.getElementById('lHints').value = (lesson.practice?.hints || []).join('\n');
     if (monacoEditor) monacoEditor.setValue(lesson.practice?.starterCode || '');
     document.getElementById('lessonEditor').style.display = 'block';
+    playSound('open');
   }
 
   function cancelEdit() {
     document.getElementById('lessonEditor').style.display = 'none';
     editingLessonId = null;
+    playSound('close');
   }
 
   function switchEditorTab(tab, btn) {
@@ -217,12 +228,13 @@
     btn.classList.add('active');
     document.getElementById('editorTheory').style.display = tab === 'theory' ? 'block' : 'none';
     document.getElementById('editorPractice').style.display = tab === 'practice' ? 'block' : 'none';
+    playSound('swipe');
   }
 
   async function saveLesson() {
     const title = document.getElementById('lTitle').value.trim();
-    if (!title) { showToast('Введите название урока', 'error'); return; }
-    if (!currentModuleId) { showToast('Выберите модуль', 'error'); return; }
+    if (!title) { showToast('Введите название урока', 'error'); playSound('error'); return; }
+    if (!currentModuleId) { showToast('Выберите модуль', 'error'); playSound('error'); return; }
 
     const hints = document.getElementById('lHints').value.split('\n').filter(h => h.trim());
     const data = {
@@ -257,23 +269,21 @@
     }
   }
 
-  // === ДИАЛОГ СОЗДАНИЯ МОДУЛЯ ===
   function showCreateModule() {
-    // Создаём модальное окно
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1000;display:flex;align-items:center;justify-content:center;';
     overlay.innerHTML = `
-      <div style="background:white;border-radius:24px;padding:30px;width:420px;max-width:90vw;box-shadow:0 16px 48px rgba(0,0,0,0.2);">
+      <div style="background:var(--card-bg);border-radius:24px;padding:30px;width:420px;max-width:90vw;box-shadow:0 16px 48px rgba(0,0,0,0.2);color:var(--text-dark);">
         <h2 style="margin:0 0 20px;">📦 Создать модуль</h2>
         <label style="font-weight:700;font-size:0.9rem;display:block;margin-bottom:6px;">Название модуля</label>
         <input id="newModuleTitle" type="text" placeholder="Например: Основы Python"
-          style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:16px;">
+          style="width:100%;border:2px solid var(--input-border);border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:16px;background:var(--input-bg);color:var(--text-dark);">
         <label style="font-weight:700;font-size:0.9rem;display:block;margin-bottom:6px;">Курс</label>
         <select id="newModuleCourse"
-          style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:20px;">
+          style="width:100%;border:2px solid var(--input-border);border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:20px;background:var(--input-bg);color:var(--text-dark);">
           <option value="">Выберите курс</option>
         </select>
-        <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
           <button onclick="this.closest('div[style]').parentElement.remove()"
             style="background:var(--bg);border:none;border-radius:20px;padding:10px 24px;font-weight:700;cursor:pointer;font-family:inherit;">Отмена</button>
           <button onclick="createModuleFromDialog(this)"
@@ -281,8 +291,8 @@
         </div>
       </div>`;
     document.body.appendChild(overlay);
+    playSound('open');
 
-    // Загружаем курсы
     api('/api/courses').then(courses => {
       const sel = overlay.querySelector('#newModuleCourse');
       if (courses) {
@@ -300,8 +310,8 @@
     const overlay = btn.closest('div[style]').parentElement;
     const title = overlay.querySelector('#newModuleTitle').value.trim();
     const courseId = overlay.querySelector('#newModuleCourse').value;
-    if (!title) { showToast('Введите название модуля', 'error'); return; }
-    if (!courseId) { showToast('Выберите курс', 'error'); return; }
+    if (!title) { showToast('Введите название модуля', 'error'); playSound('error'); return; }
+    if (!courseId) { showToast('Выберите курс', 'error'); playSound('error'); return; }
 
     const res = await api('/api/modules', {
       method: 'POST',
@@ -312,7 +322,6 @@
       showToast(`Модуль "${title}" создан! 🎉`);
       playSound('success');
       overlay.remove();
-      // Перезагружаем список модулей
       const sel = document.getElementById('moduleSelect');
       const courses = await api('/api/courses') || [];
       sel.innerHTML = '<option value="">Выберите модуль</option>';

@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <style>
-    .shop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+    .shop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
     .shop-item {
       background:white; border-radius:20px; padding:20px; text-align:center;
       box-shadow:0 2px 12px rgba(0,0,0,0.06); transition:0.3s; position:relative;
@@ -39,6 +39,20 @@
     .shop-closed .big-icon { font-size:5rem; margin-bottom:16px; }
     .timer-box { background:var(--accent); color:white; border-radius:20px; padding:20px 32px; display:inline-block; margin-top:16px; }
     .timer-box .timer-val { font-size:2rem; font-weight:900; }
+    @media (max-width: 480px) {
+      .shop-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+      .shop-item { padding: 12px; }
+      .shop-item .item-icon { font-size: 2rem; margin-bottom: 6px; }
+      .shop-item h3 { font-size: 0.85rem; }
+      .shop-item p { font-size: 0.7rem; margin-bottom: 8px; }
+      .shop-item .price { font-size: 0.95rem; margin-bottom: 8px; }
+      .shop-item .item-type-badge { font-size: 0.6rem; padding: 2px 8px; }
+    }
+    @media (max-width: 360px) {
+      .shop-grid { grid-template-columns: 1fr; }
+      .shop-item { padding: 10px; }
+    }
+    .shop-grid, .content-card, .main-content { width: 100% !important; max-width: 100% !important; }
   </style>
 </head>
 <body>
@@ -63,7 +77,7 @@
 </aside>
 
 <main class="main-content">
-  <div class="topbar">
+  <div class="topbar scroll-anim scroll-anim-fade-up">
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
     <h1>🎪 Магазин</h1>
     <div class="topbar-right">
@@ -73,7 +87,7 @@
     </div>
   </div>
 
-  <div class="content-card" style="display:flex;align-items:center;gap:16px;padding:16px 24px;">
+  <div class="content-card scroll-anim scroll-anim-fade-up" style="display:flex;align-items:center;gap:16px;padding:16px 24px;">
     <span style="font-size:2rem;">🎫</span>
     <div>
       <div style="font-size:1.4rem;font-weight:800;color:var(--accent);" id="myTickets">0</div>
@@ -81,9 +95,9 @@
     </div>
   </div>
 
-  <div class="content-card">
-    <h2>🧾 Мои покупки</h2>
-    <div id="myPurchases"><p style="color:#888;text-align:center;padding:16px;">Загрузка...</p></div>
+  <div class="content-card scroll-anim scroll-anim-fade-up">
+    <h2 class="scroll-anim scroll-anim-fade-up">🧾 Мои покупки</h2>
+    <div id="myPurchases" class="stagger-container"></div>
   </div>
 
   <div id="shopContent"></div>
@@ -195,9 +209,9 @@
     }
 
     document.getElementById('shopContent').innerHTML = `
-      <div class="content-card">
-        <h2>🛍️ Доступные товары</h2>
-        <div class="shop-grid">
+      <div class="content-card scroll-anim scroll-anim-fade-up">
+        <h2 class="scroll-anim scroll-anim-fade-up">🛍️ Доступные товары</h2>
+        <div class="shop-grid stagger-container">
           ${items.map(item => {
     const bought = boughtIds.has(String(item._id));
     const canBuy = (user.tickets || 0) >= item.price && !bought;

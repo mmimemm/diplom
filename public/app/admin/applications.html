@@ -90,6 +90,7 @@
       return;
     }
     document.getElementById('appsList').innerHTML = `
+      <div class="app-table-wrapper">
       <table class="app-table">
         <thead><tr><th>Дата</th><th>Родитель</th><th>Ребёнок</th><th>Телефон</th><th>Статус</th><th>Изменить</th></tr></thead>
         <tbody>
@@ -112,7 +113,7 @@
             </tr>
           `).join('')}
         </tbody>
-      </table>`;
+      </table></div>`;
   }
 
   function filterApps(status) {
@@ -133,5 +134,3 @@
   <script src="../../js/theme-manager.js"></script>
 </body>
 </html>
-
-

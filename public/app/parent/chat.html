@@ -54,11 +54,11 @@
       max-width: 75%;
       padding: 12px 16px;
       border-radius: 16px;
-      animation: fadeIn 0.3s ease;
+      animation: messageSlideIn 0.35s ease both;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes messageSlideIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
     .chat-message.mine {
       background: #1a1a2e;
@@ -131,18 +131,43 @@
       color: var(--accent);
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       font-family: inherit;
       font-size: 0.9rem;
     }
     .child-chat-btn:hover { background: var(--bg); }
-    .child-chat-btn.active { background: var(--accent); color: white; }
+    .child-chat-btn.active {
+      background: var(--accent);
+      color: white;
+      transform: scale(1.05);
+      box-shadow: 0 4px 16px rgba(153,0,255,0.3);
+    }
     .child-chat-btn .child-sub {
       font-size: 0.75rem;
       opacity: 0.7;
       font-weight: 400;
     }
     .child-chat-btn.active .child-sub { opacity: 0.8; }
+
+    /* Пульсирующая точка новых сообщений */
+    .chat-unread-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ff4444;
+      margin-left: 6px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    /* Анимация появления контактов */
+    .admin-contact-btn {
+      animation: fadeInUp 0.4s ease both;
+    }
+    .admin-contact-btn:nth-child(1) { animation-delay: 0.05s; }
+    .admin-contact-btn:nth-child(2) { animation-delay: 0.1s; }
+    .admin-contact-btn:nth-child(3) { animation-delay: 0.15s; }
+    .admin-contact-btn:nth-child(4) { animation-delay: 0.2s; }
 
     @media (max-width: 768px) {
       .chat-messages { max-height: calc(100vh - 380px); }
@@ -151,7 +176,13 @@
     @media (max-width: 480px) {
       .chat-tab { padding: 8px 16px; font-size: 0.85rem; }
       .chat-form input { padding: 12px 16px; font-size: 0.9rem; }
-      .chat-form button { padding: 12px 20px; }
+      .chat-form button { padding: 12px 20px; font-size: 1rem; }
+      .child-chat-btn { padding: 8px 14px; font-size: 0.8rem; }
+      .chat-messages { max-height: calc(100vh - 400px); min-height: 200px; }
+    }
+    @media (max-width: 360px) {
+      .chat-tab { font-size: 0.8rem; padding: 6px 12px; }
+      .chat-message { max-width: 92%; font-size: 0.85rem; }
     }
   </style>
 </head>
@@ -240,7 +271,7 @@
   let activeTab = 'teacher';
   let currentUser = null;
   let children = [];
-  let teachers = {};          // childId -> teacher info
+  let teachers = {};          // childId -> { firstName, lastName, _id }
   let selectedChildId = null;
   let selectedAdminId = null;
   let admins = [];
@@ -260,7 +291,27 @@
   const adminArea = document.getElementById('adminChatArea');
   const childSelector = document.getElementById('childSelector');
   const adminContacts = document.getElementById('adminContacts');
-  const avatar = document.getElementById('userAvatar');
+
+  function getTeacherId(child) {
+    // teacherId может быть ObjectId или объектом { _id, firstName, lastName }
+    if (!child) return null;
+    if (typeof child.teacherId === 'object' && child.teacherId && child.teacherId._id) {
+      return child.teacherId._id;
+    }
+    return child.teacherId || null;
+  }
+
+  function getTeacherById(teacherId) {
+    if (!teacherId) return null;
+    // Ищем в кэше teachers
+    if (teachers[teacherId]) return teachers[teacherId];
+    // Может быть teacherId уже объект
+    if (typeof teacherId === 'object' && teacherId._id) {
+      if (teachers[teacherId._id]) return teachers[teacherId._id];
+      return teacherId;
+    }
+    return null;
+  }
 
   // ---- INIT ----
   async function init() {
@@ -273,8 +324,9 @@
 
       if (typeof updateTopbarAvatar === 'function') {
         await updateTopbarAvatar(currentUser);
-      } else if (avatar) {
-        avatar.textContent = (currentUser.firstName || '?')[0].toUpperCase();
+      } else {
+        const avatar = document.getElementById('userAvatar');
+        if (avatar) avatar.textContent = (currentUser.firstName || '?')[0].toUpperCase();
       }
 
       // Загружаем детей
@@ -287,9 +339,9 @@
         // Для каждого ребёнка узнаём преподавателя
         await loadChildrenTeachers();
         renderChildSelector();
-        if (children.length > 0) {
-          selectChild(children[0]._id);
-        }
+      if (children.length > 0) {
+        window._selectChild(children[0]._id);
+      }
       }
 
       // Загружаем администраторов
@@ -302,13 +354,26 @@
 
   async function loadChildrenTeachers() {
     for (const child of children) {
-      // teacherId может быть уже подpopulated или ID
-      if (child.teacherId && typeof child.teacherId === 'object') {
-        teachers[child._id] = child.teacherId;
-      } else if (child.teacherId) {
-        // Загружаем полные данные преподавателя
-        const teacher = await api(`/api/user/${child.teacherId}`);
-        if (teacher) teachers[child._id] = teacher;
+      // Если teacherId уже пришёл как объект с данными
+      if (child.teacherId && typeof child.teacherId === 'object' && (child.teacherId.firstName || child.teacherId._id)) {
+        var t = child.teacherId;
+        var tid = t._id || t.toString();
+        teachers[tid] = t;
+        continue;
+      }
+      // Если teacherId — просто ID строка, загружаем
+      if (child.teacherId && typeof child.teacherId === 'string') {
+        const teacher = await api('/api/user/' + child.teacherId);
+        if (teacher) teachers[child.teacherId] = teacher;
+        continue;
+      }
+      // Если teacherId — ObjectId от mongoose, у него может быть toString
+      if (child.teacherId) {
+        try {
+          var tidStr = child.teacherId.toString();
+          const teacher = await api('/api/user/' + tidStr);
+          if (teacher) teachers[tidStr] = teacher;
+        } catch(e) {}
       }
     }
   }
@@ -319,80 +384,78 @@
       adminContacts.innerHTML = '<p style="color:#888;font-size:0.9rem;">Нет доступных администраторов</p>';
       return;
     }
-    adminContacts.innerHTML = admins.map(a => {
+
+    if (admins.length === 1) {
+      // Один админ — не показываем список, сразу открываем чат
+      adminContacts.innerHTML = '';
+      window._selectAdmin(admins[0]._id);
+      return;
+    }
+
+    adminContacts.innerHTML = admins.map(function(a) {
       const name = [a.firstName, a.lastName].filter(Boolean).join(' ') || 'Администратор';
       const initial = (a.firstName || 'A')[0].toUpperCase();
-      return `<button class="child-chat-btn" data-admin-id="${a._id}" onclick="window._selectAdmin('${a._id}','${name.replace(/'/g,"\\'")}')">
-        ${initial} ${name}
-      </button>`;
+      return '<button class="child-chat-btn admin-contact-btn" data-admin-id="' + a._id + '" onclick="window._selectAdmin(\'' + a._id + "')\">" +
+        initial + ' ' + name +
+        '</button>';
     }).join('');
 
-    // Выбираем первого
-    if (admins.length > 0) {
-      window._selectAdmin(admins[0]._id, [admins[0].firstName, admins[0].lastName].filter(Boolean).join(' ') || 'Администратор');
-    }
+    window._selectAdmin(admins[0]._id);
   }
 
-  window._selectAdmin = function(adminId, name) {
+  window._selectAdmin = function(adminId) {
     selectedAdminId = adminId;
-    document.querySelectorAll('#adminContacts .child-chat-btn').forEach(b => {
+    document.querySelectorAll('#adminContacts .child-chat-btn').forEach(function(b) {
       b.classList.toggle('active', b.dataset.adminId === adminId);
     });
     document.getElementById('adminChatForm').style.display = 'flex';
     lastAdminMsgId[adminId] = '';
     loadAdminMessages();
+    playSound('swipe');
   };
 
   function renderChildSelector() {
-    childSelector.innerHTML = children.map(c => {
-      const teacher = teachers[c._id];
-      const teacherName = teacher ? [teacher.firstName, teacher.lastName].filter(Boolean).join(' ') : 'Не назначен';
-      return `<button class="child-chat-btn" data-child-id="${c._id}" onclick="window._selectChild('${c._id}')">
-        ${c.firstName} ${c.lastName || ''}
-        <br><span class="child-sub">👨‍🏫 ${teacherName}</span>
-      </button>`;
+    childSelector.innerHTML = children.map(function(c) {
+      var tid = getTeacherId(c);
+      var teacher = null;
+      if (tid) teacher = getTeacherById(tid);
+      var teacherName = teacher ? [teacher.firstName, teacher.lastName].filter(Boolean).join(' ') : 'Не назначен';
+      return '<button class="child-chat-btn" data-child-id="' + c._id + '" onclick="window._selectChild(\'' + c._id + "')\">" +
+        (c.firstName || '') + ' ' + (c.lastName || '') +
+        '<br><span class="child-sub">👨‍🏫 ' + teacherName + '</span>' +
+        '</button>';
     }).join('');
   }
 
   window._selectChild = function(childId) {
     selectedChildId = childId;
-    document.querySelectorAll('.child-chat-btn[data-child-id]').forEach(b => {
+    document.querySelectorAll('.child-chat-btn[data-child-id]').forEach(function(b) {
       b.classList.toggle('active', b.dataset.childId === childId);
     });
 
-    const child = children.find(c => c._id === childId);
-    const teacher = teachers[childId];
-    const childName = child ? [child.firstName, child.lastName].filter(Boolean).join(' ') : 'Ребёнок';
-    const teacherName = teacher ? [teacher.firstName, teacher.lastName].filter(Boolean).join(' ') : 'Преподаватель';
-    teacherChatInfo.textContent = `👨‍🏫 Чат с преподавателем (${childName}): ${teacherName}`;
+    var child = children.find(function(c) { return c._id === childId; });
+    var tid = child ? getTeacherId(child) : null;
+    var teacher = tid ? getTeacherById(tid) : null;
+    var childName = child ? [child.firstName, child.lastName].filter(Boolean).join(' ') : 'Ребёнок';
+    var teacherName = teacher ? [teacher.firstName, teacher.lastName].filter(Boolean).join(' ') : 'Преподаватель';
+    teacherChatInfo.textContent = '👨‍🏫 Чат с преподавателем (' + childName + '): ' + teacherName;
 
     lastTeacherMsgId = '';
     loadTeacherMessages();
+    playSound('swipe');
   };
 
   // ---- ЗАГРУЗКА СООБЩЕНИЙ: ЧАТ С ПРЕПОДАВАТЕЛЕМ ----
   async function loadTeacherMessages() {
     if (!selectedChildId) return;
 
-    const child = children.find(c => c._id === selectedChildId);
-    if (!child) return;
-
-    const teacherId = child.teacherId?._id || child.teacherId;
-    if (!teacherId) {
-      teacherMessages.innerHTML = '<div class="chat-placeholder">У ребёнка пока нет преподавателя</div>';
-      return;
-    }
-
-    const messages = await api(`/api/parent/teacher-chat/${selectedChildId}`) || [];
+    var messages = await api('/api/parent/teacher-chat/' + selectedChildId) || [];
     if (!messages.length) {
       teacherMessages.innerHTML = '<div class="chat-placeholder">Сообщений пока нет. Напишите первое!</div>';
       return;
     }
 
-    if (messages.length > 0) {
-      lastTeacherMsgId = messages[messages.length - 1]._id;
-    }
-
+    lastTeacherMsgId = messages[messages.length - 1]._id;
     renderTeacherMessages(messages);
     scrollToBottom(teacherMessages);
   }
@@ -402,38 +465,34 @@
       teacherMessages.innerHTML = '<div class="chat-placeholder">Сообщений пока нет. Напишите первое!</div>';
       return;
     }
-
-    const parentId = currentUser._id || currentUser.id;
-    teacherMessages.innerHTML = msgs.map(m => {
-      // from: 'parent' — сообщение родителя, 'teacher' — ответ преподавателя
-      const isMine = m.from === 'parent';
-      const senderName = isMine ? 'Вы' : safeText(m.userName || 'Преподаватель');
-      const cls = isMine ? 'mine' : 'theirs';
-      const time = new Date(m.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
-
-      return `<div class="chat-message ${cls}">
-        <div class="msg-header">${senderName} · ${time}</div>
-        <div class="msg-text">${safeText(m.text || '')}</div>
-      </div>`;
+    teacherMessages.innerHTML = msgs.map(function(m) {
+      var isMine = m.from === 'parent';
+      var senderName = isMine ? 'Вы' : safeText(m.userName || 'Преподаватель');
+      var cls = isMine ? 'mine' : 'theirs';
+      var time = new Date(m.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+      return '<div class="chat-message ' + cls + '">' +
+        '<div class="msg-header">' + senderName + ' · ' + time + '</div>' +
+        '<div class="msg-text">' + safeText(m.text || '') + '</div>' +
+        '</div>';
     }).join('');
   }
 
   // ---- ОТПРАВКА: ЧАТ С ПРЕПОДАВАТЕЛЕМ ----
   teacherForm.addEventListener('submit', async function(e) {
     e.preventDefault();
-    const text = teacherInput.value.trim();
+    var text = teacherInput.value.trim();
     if (!text || !selectedChildId) return;
 
     teacherInput.disabled = true;
     try {
-      const resp = await fetch('/api/parent/teacher-chat/' + selectedChildId, {
+      var resp = await fetch('/api/parent/teacher-chat/' + selectedChildId, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text: text })
       });
 
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
+        var err = await resp.json().catch(function() { return {}; });
         showToast(err.error || 'Ошибка отправки', 'error');
         return;
       }
@@ -459,18 +518,15 @@
       return;
     }
 
-    const messages = await api(`/api/parent/admin-chat/${selectedAdminId}`) || [];
+    var messages = await api('/api/parent/admin-chat/' + selectedAdminId) || [];
 
     if (!messages.length) {
       adminMessages.innerHTML = '<div class="chat-placeholder">Сообщений пока нет. Напишите первое!</div>';
-      if (messages.length === 0) document.getElementById('adminChatForm').style.display = 'flex';
+      document.getElementById('adminChatForm').style.display = 'flex';
       return;
     }
 
-    if (messages.length > 0) {
-      lastAdminMsgId[selectedAdminId] = messages[messages.length - 1]._id;
-    }
-
+    lastAdminMsgId[selectedAdminId] = messages[messages.length - 1]._id;
     renderAdminMessages(messages);
     scrollToBottom(adminMessages);
   }
@@ -480,37 +536,34 @@
       adminMessages.innerHTML = '<div class="chat-placeholder">Сообщений пока нет. Напишите первое!</div>';
       return;
     }
-
-    const parentId = currentUser._id || currentUser.id;
-    adminMessages.innerHTML = msgs.map(m => {
-      const isMine = m.from === 'parent';
-      const senderName = isMine ? 'Вы' : safeText(m.userName || 'Администратор');
-      const cls = isMine ? 'mine' : 'theirs';
-      const time = new Date(m.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
-
-      return `<div class="chat-message ${cls}">
-        <div class="msg-header">${senderName} · ${time}</div>
-        <div class="msg-text">${safeText(m.text || '')}</div>
-      </div>`;
+    adminMessages.innerHTML = msgs.map(function(m) {
+      var isMine = m.from === 'parent';
+      var senderName = isMine ? 'Вы' : safeText(m.userName || 'Администратор');
+      var cls = isMine ? 'mine' : 'theirs';
+      var time = new Date(m.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+      return '<div class="chat-message ' + cls + '">' +
+        '<div class="msg-header">' + senderName + ' · ' + time + '</div>' +
+        '<div class="msg-text">' + safeText(m.text || '') + '</div>' +
+        '</div>';
     }).join('');
   }
 
   // ---- ОТПРАВКА: ЧАТ С АДМИНИСТРАТОРОМ ----
   adminForm.addEventListener('submit', async function(e) {
     e.preventDefault();
-    const text = adminInput.value.trim();
+    var text = adminInput.value.trim();
     if (!text || !selectedAdminId) return;
 
     adminInput.disabled = true;
     try {
-      const resp = await fetch('/api/parent/admin-chat/' + selectedAdminId, {
+      var resp = await fetch('/api/parent/admin-chat/' + selectedAdminId, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text: text })
       });
 
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
+        var err = await resp.json().catch(function() { return {}; });
         showToast(err.error || 'Ошибка отправки', 'error');
         return;
       }
@@ -529,12 +582,12 @@
   });
 
   // ---- ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ----
-  tabBtns.forEach(btn => {
+  tabBtns.forEach(function(btn) {
     btn.addEventListener('click', function() {
-      const tab = this.dataset.tab;
+      var tab = this.dataset.tab;
       if (tab === activeTab) return;
       activeTab = tab;
-      tabBtns.forEach(b => b.classList.remove('active'));
+      tabBtns.forEach(function(b) { b.classList.remove('active'); });
       this.classList.add('active');
 
       teacherArea.style.display = tab === 'teacher' ? 'block' : 'none';
@@ -544,12 +597,9 @@
   });
 
   // ---- AUTO-REFRESH ----
-  setInterval(() => {
+  setInterval(function() {
     if (activeTab === 'teacher' && selectedChildId) {
-      const child = children.find(c => c._id === selectedChildId);
-      if (child && (child.teacherId?._id || child.teacherId)) {
-        loadTeacherMessagesSilent();
-      }
+      loadTeacherMessagesSilent();
     }
     if (activeTab === 'admin' && selectedAdminId) {
       loadAdminMessagesSilent();
@@ -558,30 +608,31 @@
 
   async function loadTeacherMessagesSilent() {
     if (!selectedChildId) return;
-    const child = children.find(c => c._id === selectedChildId);
-    if (!child) return;
-    const teacherId = child.teacherId?._id || child.teacherId;
-    if (!teacherId) return;
 
-    const messages = await api(`/api/parent/teacher-chat/${selectedChildId}`) || [];
+    var messages = await api('/api/parent/teacher-chat/' + selectedChildId) || [];
     if (!messages.length) return;
 
-    const lastId = lastTeacherMsgId;
-    let lastIdx = -1;
-    if (lastId) lastIdx = messages.findIndex(m => m._id === lastId);
+    var lastId = lastTeacherMsgId;
+    var lastIdx = -1;
+    if (lastId) {
+      for (var i = messages.length - 1; i >= 0; i--) {
+        if (messages[i]._id === lastId) { lastIdx = i; break; }
+      }
+    }
 
-    const newMsgs = lastIdx >= 0 ? messages.slice(lastIdx + 1) : messages;
+    var newMsgs = lastIdx >= 0 ? messages.slice(lastIdx + 1) : [];
     if (newMsgs.length === 0 && lastId) return;
 
-    // Если нет lastId — это первый раз, ничего не делаем
     if (lastIdx < 0 && lastId) {
+      // полный перерендер
       renderTeacherMessages(messages);
     } else if (newMsgs.length > 0) {
-      // Убираем плейсхолдер
-      const placeholder = teacherMessages.querySelector('.chat-placeholder');
+      var placeholder = teacherMessages.querySelector('.chat-placeholder');
       if (placeholder) placeholder.remove();
-
-      appendMessages(teacherMessages, newMsgs, currentUser._id || currentUser.id, 'parent');
+      appendMessages(teacherMessages, newMsgs, 'parent');
+      if (document.hidden === undefined || !document.hidden) {
+        playSound('ding');
+      }
     }
 
     if (messages.length > 0) {
@@ -592,22 +643,30 @@
 
   async function loadAdminMessagesSilent() {
     if (!selectedAdminId) return;
-    const messages = await api(`/api/parent/admin-chat/${selectedAdminId}`) || [];
+
+    var messages = await api('/api/parent/admin-chat/' + selectedAdminId) || [];
     if (!messages.length) return;
 
-    const lastId = lastAdminMsgId[selectedAdminId] || '';
-    let lastIdx = -1;
-    if (lastId) lastIdx = messages.findIndex(m => m._id === lastId);
+    var lastId = lastAdminMsgId[selectedAdminId] || '';
+    var lastIdx = -1;
+    if (lastId) {
+      for (var i = messages.length - 1; i >= 0; i--) {
+        if (messages[i]._id === lastId) { lastIdx = i; break; }
+      }
+    }
 
-    const newMsgs = lastIdx >= 0 ? messages.slice(lastIdx + 1) : messages;
+    var newMsgs = lastIdx >= 0 ? messages.slice(lastIdx + 1) : [];
     if (newMsgs.length === 0 && lastId) return;
 
     if (lastIdx < 0 && lastId) {
       renderAdminMessages(messages);
     } else if (newMsgs.length > 0) {
-      const placeholder = adminMessages.querySelector('.chat-placeholder');
+      var placeholder = adminMessages.querySelector('.chat-placeholder');
       if (placeholder) placeholder.remove();
-      appendMessages(adminMessages, newMsgs, currentUser._id || currentUser.id, 'parent');
+      appendMessages(adminMessages, newMsgs, 'parent');
+      if (document.hidden === undefined || !document.hidden) {
+        playSound('ding');
+      }
     }
 
     if (messages.length > 0) {
@@ -616,29 +675,29 @@
     scrollToBottom(adminMessages);
   }
 
-  function appendMessages(container, msgs, ownId, ownFrom) {
-    msgs.forEach(m => {
-      const isMine = m.from === ownFrom;
-      const senderName = isMine ? 'Вы' : safeText(m.userName || '?');
-      const cls = isMine ? 'mine' : 'theirs';
-      const time = new Date(m.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+  function appendMessages(container, msgs, ownFrom) {
+    msgs.forEach(function(m) {
+      var isMine = m.from === ownFrom;
+      var senderName = isMine ? 'Вы' : safeText(m.userName || '?');
+      var cls = isMine ? 'mine' : 'theirs';
+      var time = new Date(m.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
 
-      const div = document.createElement('div');
-      div.className = `chat-message ${cls}`;
-      div.innerHTML = `<div class="msg-header">${senderName} · ${time}</div><div class="msg-text">${safeText(m.text || '')}</div>`;
+      var div = document.createElement('div');
+      div.className = 'chat-message ' + cls;
+      div.innerHTML = '<div class="msg-header">' + senderName + ' · ' + time + '</div><div class="msg-text">' + safeText(m.text || '') + '</div>';
       container.appendChild(div);
     });
   }
 
   function safeText(s) {
     if (!s) return '';
-    const d = document.createElement('div');
+    var d = document.createElement('div');
     d.textContent = s;
     return d.innerHTML;
   }
 
   function scrollToBottom(el) {
-    el.scrollTop = el.scrollHeight;
+    setTimeout(function() { el.scrollTop = el.scrollHeight; }, 50);
   }
 
   // ---- START ----

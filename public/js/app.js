@@ -392,6 +392,9 @@ const catClickMessages = [
   'Сегодня ты особенно умный! 🌟'
 ];
 
+// Храним оригинальную позицию кота для возврата после авто-отодвигания
+let _catOrigPos = null;
+
 let catClickIndex = 0;
 let catAutoIndex = 0;
 
@@ -403,48 +406,281 @@ function initCatAssistant() {
 
   const bubble = cat.querySelector('.cat-bubble');
   const img = cat.querySelector('img');
+  const isMobile = window.innerWidth < 768;
 
-    // Клик по коту — игривые фразы
-  cat.addEventListener('click', () => {
+  // ===== DRAG-TO-MOVE =====
+  // Восстанавливаем сохранённую позицию
+  (function restoreCatPosition() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('catPos'));
+      if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') {
+        cat.style.left = saved.x + 'px';
+        cat.style.top = saved.y + 'px';
+        cat.style.bottom = 'auto';
+        cat.style.right = 'auto';
+      }
+    } catch (e) { /* ignore */ }
+  })();
+
+  let dragStartX = 0, dragStartY = 0;
+  let dragOrigLeft = 0, dragOrigTop = 0;
+  let isDragging = false;
+  let wasDragged = false;
+  let dragArmed = false; // для touch: не начинаем перетаскивание сразу, ждём порога
+
+  // Порог перетаскивания: на мобилке больше, чтобы случайные касания не триггерили
+  const dragThreshold = isMobile ? 8 : 5;
+
+  // Сохраняем привязки, чтобы потом отписаться при необходимости
+  let _boundMouseMove, _boundMouseUp;
+  let _boundTouchMove, _boundTouchEnd;
+
+  function catDragStart(clientX, clientY) {
+    const rect = cat.getBoundingClientRect();
+    dragStartX = clientX;
+    dragStartY = clientY;
+    dragOrigLeft = rect.left;
+    dragOrigTop = rect.top;
+    isDragging = true;
+    wasDragged = false;
+    dragArmed = false;
+    cat.classList.add('dragging');
+    cat.style.left = rect.left + 'px';
+    cat.style.top = rect.top + 'px';
+    cat.style.bottom = 'auto';
+    cat.style.right = 'auto';
+  }
+
+  function catDragMove(clientX, clientY) {
+    if (!isDragging) return;
+    const dx = clientX - dragStartX;
+    const dy = clientY - dragStartY;
+    // Не считаем перетаскиванием, пока не превышен порог
+    if (!dragArmed && !wasDragged && (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold)) {
+      dragArmed = true;
+      wasDragged = true;
+    }
+    // Если не вооружены и не тащим — не двигаем кота
+    if (!dragArmed && !wasDragged) return;
+    let newLeft = dragOrigLeft + dx;
+    let newTop = dragOrigTop + dy;
+    const maxLeft = window.innerWidth - cat.offsetWidth;
+    const maxTop = window.innerHeight - cat.offsetHeight;
+    newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+    newTop = Math.max(0, Math.min(newTop, maxTop));
+    cat.style.left = newLeft + 'px';
+    cat.style.top = newTop + 'px';
+  }
+
+  function catDragEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    cat.classList.remove('dragging');
+    // Сбрасываем wasDragged, если был только тач-старт без реального движения
+    if (wasDragged && dragArmed) {
+      try {
+        localStorage.setItem('catPos', JSON.stringify({
+          x: parseInt(cat.style.left) || 0,
+          y: parseInt(cat.style.top) || 0
+        }));
+      } catch (e) { /* ignore */ }
+    } else {
+      // Если drag не состоялся — сбрасываем флаг, чтобы click сработал
+      wasDragged = false;
+    }
+    dragArmed = false;
+  }
+
+  // Mouse
+  cat.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    catDragStart(e.clientX, e.clientY);
+    e.preventDefault();
+  });
+  _boundMouseMove = function(e) { catDragMove(e.clientX, e.clientY); };
+  _boundMouseUp = function() { catDragEnd(); };
+  document.addEventListener('mousemove', _boundMouseMove);
+  document.addEventListener('mouseup', _boundMouseUp);
+
+  // Touch — с порогом: не начинаем drag сразу, ждём пока палец сдвинется
+  cat.addEventListener('touchstart', function(e) {
+    const t = e.touches[0];
+    // Запоминаем начальную позицию, но drag активируем только после движения
+    const rect = cat.getBoundingClientRect();
+    dragStartX = t.clientX;
+    dragStartY = t.clientY;
+    dragOrigLeft = rect.left;
+    dragOrigTop = rect.top;
+    isDragging = true;
+    wasDragged = false;
+    dragArmed = false;
+    cat.classList.add('dragging');
+    cat.style.left = rect.left + 'px';
+    cat.style.top = rect.top + 'px';
+    cat.style.bottom = 'auto';
+    cat.style.right = 'auto';
+  }, { passive: true });
+
+  _boundTouchMove = function(e) {
+    if (!isDragging) return;
+    const t = e.touches[0];
+    const dx = t.clientX - dragStartX;
+    const dy = t.clientY - dragStartY;
+    if (!dragArmed && !wasDragged && (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold)) {
+      dragArmed = true;
+      wasDragged = true;
+    }
+    if (!dragArmed && !wasDragged) return;
+    let newLeft = dragOrigLeft + dx;
+    let newTop = dragOrigTop + dy;
+    const maxLeft = window.innerWidth - cat.offsetWidth;
+    const maxTop = window.innerHeight - cat.offsetHeight;
+    newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+    newTop = Math.max(0, Math.min(newTop, maxTop));
+    cat.style.left = newLeft + 'px';
+    cat.style.top = newTop + 'px';
+  };
+  _boundTouchEnd = function() {
+    if (!isDragging) return;
+    isDragging = false;
+    cat.classList.remove('dragging');
+    if (wasDragged && dragArmed) {
+      try {
+        localStorage.setItem('catPos', JSON.stringify({
+          x: parseInt(cat.style.left) || 0,
+          y: parseInt(cat.style.top) || 0
+        }));
+      } catch (e) { /* ignore */ }
+    } else {
+      wasDragged = false;
+    }
+    dragArmed = false;
+  };
+  document.addEventListener('touchmove', _boundTouchMove, { passive: true });
+  document.addEventListener('touchend', _boundTouchEnd);
+
+  // При resize подрезаем позицию, если кот уехал за экран
+  window.addEventListener('resize', function() {
+    const left = parseInt(cat.style.left);
+    const top = parseInt(cat.style.top);
+    if (isNaN(left) || isNaN(top)) return;
+    const maxLeft = window.innerWidth - cat.offsetWidth;
+    const maxTop = window.innerHeight - cat.offsetHeight;
+    const newLeft = Math.max(0, Math.min(left, maxLeft));
+    const newTop = Math.max(0, Math.min(top, maxTop));
+    if (newLeft !== left || newTop !== top) {
+      cat.style.left = newLeft + 'px';
+      cat.style.top = newTop + 'px';
+      try {
+        localStorage.setItem('catPos', JSON.stringify({ x: newLeft, y: newTop }));
+      } catch (e) { /* ignore */ }
+    }
+  });
+
+  // ===== КЛИК ПО КОТУ (только если не было drag) =====
+  cat.addEventListener('click', function(e) {
+    if (wasDragged) {
+      wasDragged = false;
+      return;
+    }
     if (!bubble) return;
     const msg = catClickMessages[catClickIndex % catClickMessages.length];
     catClickIndex++;
     bubble.textContent = msg;
     cat.classList.add('talking');
     clearTimeout(cat._bubbleTimer);
-    cat._bubbleTimer = setTimeout(() => cat.classList.remove('talking'), 4000);
+    cat._bubbleTimer = setTimeout(function() {
+      cat.classList.remove('talking');
+    }, 4000);
     playSound('ding');
-    // Маленький эффект при клике
     if (img) {
       img.style.animation = 'none';
       img.style.transform = 'scale(1.2) rotate(10deg)';
-      setTimeout(() => {
+      setTimeout(function() {
         img.style.transform = '';
         img.style.animation = '';
       }, 300);
     }
   });
 
-  // Автофразы каждые 25 секунд
-  setInterval(() => {
+  // ===== АВТОФРАЗЫ КАЖДЫЕ 25 СЕКУНД =====
+  setInterval(function() {
     if (!bubble) return;
     const msg = catMessages[catAutoIndex % catMessages.length];
     catAutoIndex++;
     bubble.textContent = msg;
     cat.classList.add('talking');
     clearTimeout(cat._bubbleTimer);
-    cat._bubbleTimer = setTimeout(() => cat.classList.remove('talking'), 4000);
+    cat._bubbleTimer = setTimeout(function() {
+      cat.classList.remove('talking');
+    }, 4000);
   }, 25000);
 
-  // Первое сообщение через 3 секунды
-  setTimeout(() => {
-    if (bubble) {
+  // ===== ПЕРВОЕ ПРИВЕТСТВИЕ =====
+  setTimeout(function() {
+    if (bubble && !localStorage.getItem('catPos')) {
       bubble.textContent = 'Привет! Нажми на меня 😺';
       cat.classList.add('talking');
       clearTimeout(cat._bubbleTimer);
-      cat._bubbleTimer = setTimeout(() => cat.classList.remove('talking'), 4000);
+      cat._bubbleTimer = setTimeout(function() {
+        cat.classList.remove('talking');
+      }, 4000);
     }
   }, 3000);
+
+  // ===== АВТОМАТИЧЕСКОЕ ОТОДВИГАНИЕ ПРИ ФОКУСЕ НА ПОЛЕ ВВОДА (мобильные) =====
+  if (isMobile) {
+    const inputs = document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="password"], textarea');
+    let _catFocusMoved = false;
+
+    function moveCatFromInput() {
+      if (!cat || _catFocusMoved) return;
+      _catFocusMoved = true;
+      // Запоминаем позицию только если ещё не запомнили
+      if (!_catOrigPos) {
+        _catOrigPos = {
+          left: cat.style.left,
+          top: cat.style.top,
+          bottom: cat.style.bottom,
+          right: cat.style.right,
+          display: cat.style.display
+        };
+      }
+      // Перемещаем кота наверх (left top), подальше от клавиатуры
+      cat.style.left = '16px';
+      cat.style.top = '80px';
+      cat.style.bottom = 'auto';
+      cat.style.right = 'auto';
+      // Уменьшаем размер на мобилке, чтобы меньше мешал
+      var catImg = cat.querySelector('img');
+      if (catImg) catImg.style.width = '50px';
+    }
+
+    function restoreCatPosition() {
+      if (!cat || !_catFocusMoved) return;
+      _catFocusMoved = false;
+      if (_catOrigPos) {
+        cat.style.left = _catOrigPos.left;
+        cat.style.top = _catOrigPos.top;
+        cat.style.bottom = _catOrigPos.bottom;
+        cat.style.right = _catOrigPos.right;
+      }
+      // Восстанавливаем размер
+      var catImg = cat.querySelector('img');
+      if (catImg) catImg.style.width = '';
+    }
+
+    inputs.forEach(function(el) {
+      el.addEventListener('focus', function() {
+        // Небольшая задержка, чтобы клавиатура успела появиться и мы знали её размер
+        setTimeout(moveCatFromInput, 300);
+      });
+      el.addEventListener('blur', function() {
+        // Возвращаем с задержкой, чтобы клавиатура точно убралась
+        setTimeout(restoreCatPosition, 400);
+      });
+    });
+  }
 }
 
 function showCatBubble(cat, bubble, msg) {
@@ -484,6 +720,22 @@ function showToast(msg, type = 'success') {
 }
 
 window.toggleNotificationsPanel = toggleNotificationsPanel;
+
+// ===== FALLBACK для scroll-anim (гарантирует видимость на всех страницах) =====
+function ensureAllVisible() {
+  var hidden = document.querySelectorAll('.scroll-anim:not(.visible)');
+  if (hidden.length > 0) {
+    hidden.forEach(function(el) {
+      el.classList.add('visible');
+    });
+  }
+}
+
+// Запускаем safety fallback с задержками (даже если app-enhancements.js не загружен)
+// Используем 300ms для быстрого исправления, плюс повторные проверки
+setTimeout(ensureAllVisible, 300);
+setTimeout(ensureAllVisible, 800);
+setTimeout(ensureAllVisible, 2000);
 window.toggleNotif = toggleNotificationsPanel;
 
 // ===== МИНИ-ИГРА (разминка) =====

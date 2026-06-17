@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Чаты — IT-MANIA</title>
   <link rel="icon" href="../../images/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="../../css/app.css?v=2">
@@ -14,8 +14,10 @@
     .chat-tabs { display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap; }
     .chat-tab { padding:8px 18px;border-radius:30px;border:2px solid var(--accent);background:none;color:var(--accent);font-weight:700;cursor:pointer;font-family:inherit;transition:0.3s;font-size:0.85rem; }
     .chat-tab.active { background:var(--accent);color:white; }
+    .chat-tab:hover { background:rgba(153,0,255,0.08); }
     .contact-item { display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:16px;cursor:pointer;transition:0.3s;margin-bottom:6px;background:white;box-shadow:0 1px 4px rgba(0,0,0,0.06); }
     .contact-item:hover { transform:translateX(4px);box-shadow:0 2px 12px rgba(0,0,0,0.1); }
+    .contact-item:active { transform:translateX(4px) scale(0.98); }
     .contact-item.active { background:var(--accent);color:white; }
     .contact-avatar { width:40px;height:40px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;flex-shrink:0; }
     .contact-item.active .contact-avatar { background:rgba(255,255,255,0.2); }
@@ -25,24 +27,30 @@
     .contact-item.active .contact-sub { color:rgba(255,255,255,0.7); }
     .unread-dot { width:8px;height:8px;border-radius:50%;background:#FF69B4;flex-shrink:0; }
     .messages-area { flex:1;background:white;border-radius:16px;padding:16px;overflow-y:auto;max-height:calc(100vh - 420px);display:flex;flex-direction:column;gap:8px; }
-    .msg { max-width:80%;padding:10px 16px;border-radius:18px;font-size:0.9rem;line-height:1.4; }
+    .msg { max-width:80%;padding:10px 16px;border-radius:18px;font-size:0.9rem;line-height:1.4;animation:fadeInUp 0.3s ease both; }
     .msg.mine { align-self:flex-end;background:var(--accent);color:white;border-bottom-right-radius:4px; }
     .msg.theirs { align-self:flex-start;background:var(--bg);color:var(--text-dark);border-bottom-left-radius:4px; }
     .msg-time { font-size:0.65rem;opacity:0.6;margin-top:4px;text-align:right; }
     .msg-input-area { display:flex;gap:10px;margin-top:12px; }
     .msg-input { flex:1;border:2px solid #eee;border-radius:24px;padding:12px 18px;font-family:inherit;outline:none;font-size:0.9rem;transition:0.3s; }
     .msg-input:focus { border-color:var(--accent); }
-    .empty-chat { text-align:center;padding:60px 20px;color:#888; }
-    .empty-chat .icon { font-size:4rem;margin-bottom:12px; }
+    .empty-chat { text-align:center;padding:60px 20px;color:#888;animation:fadeInUp 0.5s ease both; }
+    .empty-chat .icon { font-size:4rem;margin-bottom:12px;animation:float 3s ease-in-out infinite; }
     .student-actions { display:flex;gap:6px;flex-wrap:wrap;margin-top:8px; }
     .achievement-btn { background:linear-gradient(135deg,#FFD700,#FFA500);border:none;color:white;border-radius:20px;padding:6px 14px;font-weight:700;font-size:0.8rem;cursor:pointer;font-family:inherit;transition:0.3s; }
     .achievement-btn:hover { transform:scale(1.05); }
+    .achievement-btn:active { transform:scale(0.95); }
     .contact-badge { display:inline-block;background:#FFD700;border-radius:10px;padding:2px 8px;font-size:0.7rem;font-weight:700;margin-left:6px; }
-    .search-contacts { width:100%;border:2px solid #eee;border-radius:20px;padding:8px 14px;font-family:inherit;outline:none;margin-bottom:12px;font-size:0.85rem; }
-    @media(max-width:768px) { .chat-layout { flex-direction:column; } .chat-sidebar { width:100%; } .messages-area { max-height:400px; } }
+    .search-contacts { width:100%;border:2px solid #eee;border-radius:20px;padding:8px 14px;font-family:inherit;outline:none;margin-bottom:12px;font-size:0.85rem;transition:0.3s; }
+    .search-contacts:focus { border-color:var(--accent); }
+    @media(max-width:992px) { .chat-layout { flex-direction:column; } .chat-sidebar { width:100%; } .messages-area { max-height:400px; } .chat-tabs { justify-content:center; } }
+    @media(max-width:768px) { .chat-layout { min-height:auto;max-height:none; } .msg { max-width:90%; } }
+    @media(max-width:480px) { .msg-input-area { flex-direction:column; } .msg-input-area button { width:100%; } .chat-tab { padding:6px 12px;font-size:0.78rem; } }
   </style>
 </head>
 <body>
+<div class="page-loader"></div>
+
 <aside class="sidebar">
   <div class="sidebar-logo">
     <img src="../../images/star.gif?v=3" alt="IT-MANIA" onerror="this.onerror=null; this.onerror=null; this.src='../../images/star.png'">
@@ -62,7 +70,7 @@
 <main class="main-content">
   <div class="topbar">
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
-    <h1>💬 Чаты</h1>
+    <h1 class="greeting-text">💬 Чаты</h1>
     <div class="topbar-right">
       <button class="sound-btn" id="soundBtn">🔊</button>
       <button class="notif-btn" onclick="toggleNotificationsPanel()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
@@ -89,26 +97,26 @@
     <!-- Основная область чата -->
     <div class="chat-main">
       <div class="content-card" style="flex:1;display:flex;flex-direction:column;padding:20px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
           <h2 id="chatHeader" style="margin:0;">💬 Выберите чат</h2>
           <div id="studentActions" style="display:none;"></div>
         </div>
 
-        <!-- Групповой чат (показывается по умолчанию) -->
+        <!-- Групповой чат -->
         <div id="groupChatArea" style="display:flex;flex-direction:column;flex:1;">
           <div class="messages-area" id="groupMessages"></div>
           <div class="msg-input-area">
             <input class="msg-input" id="groupMsgInput" type="text" placeholder="Напишите сообщение группе..." onkeydown="if(event.key==='Enter')sendGroupMessage()">
-            <button onclick="sendGroupMessage()" style="background:var(--accent);color:white;border:none;border-radius:24px;padding:12px 24px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">➤</button>
+            <button onclick="sendGroupMessage()" style="background:var(--accent);color:white;border:none;border-radius:24px;padding:12px 24px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;transition:0.2s;">➤</button>
           </div>
         </div>
 
-        <!-- Личный чат (скрыт) -->
+        <!-- Личный чат -->
         <div id="personalChatArea" style="display:none;flex-direction:column;flex:1;">
           <div class="messages-area" id="personalMessages"></div>
           <div class="msg-input-area">
             <input class="msg-input" id="personalMsgInput" type="text" placeholder="Напишите сообщение..." onkeydown="if(event.key==='Enter')sendPersonalMessage()">
-            <button onclick="sendPersonalMessage()" style="background:var(--accent);color:white;border:none;border-radius:24px;padding:12px 24px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">➤</button>
+            <button onclick="sendPersonalMessage()" style="background:var(--accent);color:white;border:none;border-radius:24px;padding:12px 24px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;transition:0.2s;">➤</button>
           </div>
         </div>
       </div>
@@ -122,18 +130,18 @@
 </div>
 
 <script src="../../js/app.js"></script>
+<script src="../../js/app-enhancements.js"></script>
 <script>
   requireAuth(['teacher']);
 
   let currentTab = 'group';
   let currentContactId = null;
   let currentContactName = '';
-  let currentContactType = ''; // 'student', 'parent', 'admin'
+  let currentContactType = '';
   let groupId = null;
   let chatPollInterval = null;
   let myUserId = null;
 
-  // Предустановленные достижения
   const ACHIEVEMENTS = [
     { name: 'Отличный код!', icon: '⭐' },
     { name: 'Скорость мысли', icon: '⚡' },
@@ -157,31 +165,28 @@
       document.getElementById('userAvatar').textContent = user.firstName?.charAt(0) || '?';
     }
 
-    // Находим группу
     const groups = await api('/api/admin/groups') || [];
     const myGroup = groups.find(g => (g.teacherId?._id || g.teacherId)?.toString() === user._id?.toString());
     if (myGroup) {
       groupId = myGroup._id;
     }
 
-    // Показываем групповой чат по умолчанию
     document.getElementById('groupChatArea').style.display = 'flex';
     document.getElementById('personalChatArea').style.display = 'none';
     
     await showGroupChat();
     
-    // Автообновление каждые 5 секунд
     chatPollInterval = setInterval(() => {
       if (currentTab === 'group') loadGroupMessages();
       else if (currentContactId) loadPersonalMessages();
     }, 5000);
   }
 
-  // === ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ===
   async function switchChatTab(tab, btn) {
     document.querySelectorAll('.chat-tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
     currentTab = tab;
+    playSound('swipe');
 
     document.getElementById('chatHeader').textContent = 
       tab === 'group' ? '💬 Групповой чат' : 
@@ -203,7 +208,6 @@
     }
   }
 
-  // === ГРУППОВОЙ ЧАТ ===
   async function showGroupChat() {
     document.getElementById('contactsList').innerHTML = '<p style="color:#888;text-align:center;padding:20px;">Групповой чат активен</p>';
     if (!groupId) {
@@ -228,7 +232,7 @@
     container.innerHTML = messages.map(m => {
       const isMine = m.userId === getUserId();
       return `
-        <div class="msg ${isMine ? 'mine' : 'theirs'}" style="max-width:80%;">
+        <div class="msg ${isMine ? 'mine' : 'theirs'}">
           ${!isMine ? `<div style="font-weight:700;font-size:0.75rem;margin-bottom:2px;opacity:0.7;">${m.userName || 'Ученик'}${m.userRole === 'teacher' ? ' 👨‍🏫' : ''}</div>` : ''}
           <div>${escHtml(m.text)}</div>
           <div class="msg-time">${new Date(m.createdAt).toLocaleString('ru', {hour:'2-digit',minute:'2-digit'})}</div>
@@ -250,7 +254,6 @@
     await loadGroupMessages();
   }
 
-  // === КОНТАКТЫ (ученики/родители/админы) ===
   async function loadContacts() {
     const container = document.getElementById('contactsList');
     container.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">Загрузка...</p>';
@@ -265,11 +268,7 @@
     }
 
     if (!contacts.length) {
-      container.innerHTML = `
-        <div style="text-align:center;padding:30px;">
-          <div style="font-size:2.5rem;margin-bottom:8px;">📭</div>
-          <p style="color:#888;">${currentTab === 'students' ? 'Нет учеников в группе' : currentTab === 'parents' ? 'Нет родителей' : 'Нет администраторов'}</p>
-        </div>`;
+      container.innerHTML = `<div class="empty-state"><div class="empty-state-icon" style="font-size:2.5rem;">📭</div><div class="empty-state-desc">${currentTab === 'students' ? 'Нет учеников в группе' : currentTab === 'parents' ? 'Нет родителей' : 'Нет администраторов'}</div></div>`;
       return;
     }
 
@@ -336,7 +335,6 @@
     });
   }
 
-  // === ЛИЧНЫЙ ЧАТ ===
   async function openPersonalChat(contactId, name, type) {
     currentContactId = contactId;
     currentContactName = name;
@@ -344,13 +342,12 @@
     document.getElementById('chatHeader').textContent = `💬 ${name}`;
     document.getElementById('groupChatArea').style.display = 'none';
     document.getElementById('personalChatArea').style.display = 'flex';
+    playSound('open');
 
-    // Обновляем активный контакт
     document.querySelectorAll('.contact-item').forEach(el => {
       el.classList.toggle('active', el.dataset.id === contactId);
     });
 
-    // Показываем кнопку выдачи достижения для учеников
     const actionsDiv = document.getElementById('studentActions');
     if (type === 'student') {
       actionsDiv.style.display = 'flex';
@@ -387,8 +384,6 @@
       return;
     }
     container.innerHTML = messages.map(m => {
-      // Для чата с админом обе стороны могут иметь from === 'teacher',
-      // поэтому определяем "своё" сообщение по studentId
       let isMine;
       if (currentContactType === 'admin') {
         isMine = String(m.studentId) === String(myUserId);
@@ -431,17 +426,16 @@
     }
   }
 
-  // === ДИАЛОГ ВЫДАЧИ ДОСТИЖЕНИЯ ===
   function showAchievementDialog(studentId, studentName) {
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1000;display:flex;align-items:center;justify-content:center;';
     overlay.innerHTML = `
-      <div style="background:white;border-radius:24px;padding:30px;width:460px;max-width:90vw;box-shadow:0 16px 48px rgba(0,0,0,0.2);">
+      <div style="background:var(--card-bg);border-radius:24px;padding:30px;width:460px;max-width:90vw;box-shadow:0 16px 48px rgba(0,0,0,0.2);color:var(--text-dark);">
         <h2 style="margin:0 0 6px;">🏆 Выдать достижение</h2>
         <p style="color:#888;margin:0 0 20px;">Ученик: <b>${studentName}</b></p>
-        <label style="font-weight:700;font-size:0.9rem;display:block;margin-bottom:6px;">Или введите своё название</label>
+        <label style="font-weight:700;font-size:0.9rem;display:block;margin-bottom:6px;">Название достижения</label>
         <input id="customAchievement" type="text" placeholder="Своё достижение..." 
-          style="width:100%;border:2px solid #eee;border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:16px;">
+          style="width:100%;border:2px solid var(--input-border);border-radius:20px;padding:10px 16px;font-family:inherit;outline:none;margin-bottom:16px;background:var(--input-bg);color:var(--text-dark);">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;">
           ${ACHIEVEMENTS.map(a => `
             <button onclick="selectAchievement(this,'${a.name}','${a.icon}')" 
@@ -451,7 +445,7 @@
             </button>
           `).join('')}
         </div>
-        <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
           <button onclick="this.closest('div[style]').parentElement.remove()"
             style="background:var(--bg);border:none;border-radius:20px;padding:10px 24px;font-weight:700;cursor:pointer;font-family:inherit;">Отмена</button>
           <button onclick="giveAchievement('${studentId}')"
@@ -459,6 +453,7 @@
         </div>
       </div>`;
     document.body.appendChild(overlay);
+    playSound('open');
     window._achievementOverlay = overlay;
     window._selectedAchievement = null;
   }
@@ -477,7 +472,7 @@
   async function giveAchievement(studentId) {
     const customInput = document.getElementById('customAchievement');
     const name = customInput.value.trim();
-    if (!name) { showToast('Выберите или введите название достижения', 'error'); return; }
+    if (!name) { showToast('Выберите или введите название достижения', 'error'); playSound('error'); return; }
 
     const res = await api('/api/teacher/achievement', {
       method: 'POST',
@@ -493,7 +488,6 @@
     }
   }
 
-  // === УТИЛИТЫ ===
   function escHtml(s) {
     if (!s) return '';
     return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>');

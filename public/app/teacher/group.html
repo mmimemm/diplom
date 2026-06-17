@@ -2,14 +2,25 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Моя группа — IT-MANIA</title>
   <link rel="icon" href="../../images/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="../../css/app.css?v=2">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .schedule-item { background:var(--bg);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:4px;transition:0.3s; }
+    .schedule-item:hover { transform:translateY(-2px);box-shadow:var(--shadow); }
+    .schedule-day { font-weight:700;color:var(--accent);font-size:1.1rem; }
+    .schedule-time { font-weight:600;font-size:1.2rem; }
+    .schedule-room { color:#888;font-size:0.9rem; }
+    @media(max-width:768px) { .schedule-grid { grid-template-columns:1fr; } }
+    @media(max-width:480px) { .schedule-item { padding:12px; } }
+  </style>
 </head>
 <body>
+<div class="page-loader"></div>
+
 <aside class="sidebar">
   <div class="sidebar-logo">
     <img src="../../images/star.gif?v=3" alt="IT-MANIA" onerror="this.onerror=null; this.onerror=null; this.src='../../images/star.png'">
@@ -29,7 +40,7 @@
 <main class="main-content">
   <div class="topbar">
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
-    <h1>👥 Моя группа</h1>
+    <h1 class="greeting-text">👥 Моя группа</h1>
     <div class="topbar-right">
       <button class="sound-btn" id="soundBtn">🔊</button>
       <button class="notif-btn" onclick="toggleNotificationsPanel()">🔔 <span class="notif-badge" id="notifBadge"></span></button>
@@ -45,7 +56,7 @@
 
   <div class="stats-grid" id="groupStats"></div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+  <div class="grid-2col">
     <!-- Список учеников -->
     <div class="content-card">
       <h2>Ученики</h2>
@@ -65,6 +76,7 @@
 </div>
 
 <script src="../../js/app.js"></script>
+<script src="../../js/app-enhancements.js"></script>
 <script>
   requireAuth(['teacher']);
 
@@ -82,10 +94,9 @@
       (g.teacherId?._id || g.teacherId)?.toString() === user._id?.toString()
     );
 
-    // Загрузка расписания
     if (myGroup?.schedule?.length) {
       const scheduleHTML = myGroup.schedule.map(s => `
-        <div class="schedule-item">
+        <div class="schedule-item stagger-item">
           <span class="schedule-day">${s.day}</span>
           <span class="schedule-time">${s.time}</span>
           <span class="schedule-room">${s.room || 'Кабинет не указан'}</span>
@@ -97,28 +108,27 @@
     }
 
     if (!myGroup) {
-      document.getElementById('studentsList').innerHTML = '<p style="color:#888;text-align:center;padding:20px;">Группа не назначена</p>';
+      document.getElementById('studentsList').innerHTML = `<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-title">Группа не назначена</div><div class="empty-state-desc">Обратитесь к администратору</div></div>`;
       return;
     }
 
     const students = myGroup.students || [];
 
     document.getElementById('groupStats').innerHTML = `
-      <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-info"><h3>${students.length}</h3><p>Учеников</p></div></div>
-      <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-info"><h3>${students.reduce((s,st)=>s+(st.xp||0),0)}</h3><p>Суммарный XP</p></div></div>
-      <div class="stat-card"><div class="stat-icon">🏅</div><div class="stat-info"><h3>${students.length ? Math.round(students.reduce((s,st)=>s+(st.xp||0),0)/students.length) : 0}</h3><p>Средний XP</p></div></div>
+      <div class="stat-card stat-anim"><div class="stat-icon">👥</div><div class="stat-info"><h3>${students.length}</h3><p>Учеников</p></div></div>
+      <div class="stat-card stat-anim"><div class="stat-icon">⭐</div><div class="stat-info"><h3>${students.reduce((s,st)=>s+(st.xp||0),0)}</h3><p>Суммарный XP</p></div></div>
+      <div class="stat-card stat-anim"><div class="stat-icon">🏅</div><div class="stat-info"><h3>${students.length ? Math.round(students.reduce((s,st)=>s+(st.xp||0),0)/students.length) : 0}</h3><p>Средний XP</p></div></div>
     `;
 
     if (!students.length) {
-      document.getElementById('studentsList').innerHTML = '<p style="color:#888;text-align:center;padding:20px;">Учеников пока нет</p>';
+      document.getElementById('studentsList').innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">Учеников пока нет</div><div class="empty-state-desc">Когда ученики появятся, вы увидите их здесь</div></div>`;
       return;
     }
 
-    // Сортируем по XP
     const sorted = [...students].sort((a, b) => (b.xp || 0) - (a.xp || 0));
 
     document.getElementById('studentsList').innerHTML = sorted.map((s, i) => `
-      <div class="leaderboard-item">
+      <div class="leaderboard-item stagger-item">
         <div class="lb-rank">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</div>
         <div class="lb-avatar">${s.firstName?.charAt(0) || '?'}</div>
         <div class="lb-name">${s.firstName || ''} ${s.lastName || ''}</div>
@@ -129,7 +139,6 @@
       </div>
     `).join('');
 
-    // График
     new Chart(document.getElementById('groupChart'), {
       type: 'bar',
       data: {
@@ -139,6 +148,8 @@
           borderRadius: 8 }]
       },
       options: {
+        responsive: true,
+        maintainAspectRatio: true,
         plugins: { legend: { display: false } },
         scales: { y: { beginAtZero: true, grid: { color: '#f0e8ff' } }, x: { grid: { display: false } } }
       }

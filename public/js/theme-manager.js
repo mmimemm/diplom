@@ -4,10 +4,10 @@
 function loadTheme() {
   try {
     const savedTheme = localStorage.getItem('theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    // Приоритет: сохраненная тема > системная > светлая
-    const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+    // По умолчанию ВСЕГДА светлая тема
+    // Системные предпочтения игнорируем — пользователь может переключить вручную
+    const theme = savedTheme || 'light';
     
     applyTheme(theme);
     

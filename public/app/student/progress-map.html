@@ -10,12 +10,12 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <style>
     .progress-map {
-      min-height: 500px;
+      min-height: 350px;
       background: linear-gradient(135deg, #1a0033, #330066, #0d0d2e);
       border-radius: var(--radius-card);
       position: relative;
       overflow: hidden;
-      padding: 40px;
+      padding: 20px;
     }
     /* Звёзды на фоне карты */
     .map-bg-star {
@@ -115,6 +115,28 @@
     }
     .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #888; }
     .legend-dot { width: 16px; height: 16px; border-radius: 50%; }
+    @media (max-width: 480px) {
+      .progress-map { min-height: 250px; padding: 12px; }
+      .map-title { font-size: 1.2rem; margin-bottom: 20px; }
+      .map-road { gap: 10px; padding: 10px 0 80px; }
+      .map-node { width: 44px; height: 44px; font-size: 1rem; }
+      .map-node .node-label { font-size: 0.6rem; }
+      .map-connector { min-width: 10px; max-width: 30px; }
+      .castle-wrap img { width: 60px; }
+      .castle-wrap { right: 20px; }
+      .map-cat-wrap img { width: 35px; }
+      .stats-grid { margin-top: 12px !important; }
+    }
+    @media (max-width: 360px) {
+      .progress-map { min-height: 200px; padding: 8px; }
+      .map-title { font-size: 1rem; margin-bottom: 12px; }
+      .map-road { gap: 6px; padding: 6px 0 60px; }
+      .map-node { width: 36px; height: 36px; font-size: 0.85rem; }
+      .map-connector { min-width: 6px; max-width: 20px; }
+      .castle-wrap img { width: 75px; }
+      .map-cat-wrap img { width: 28px; }
+    }
+    .content-card, .stats-grid, .main-content, .progress-map, .map-road, .map-legend { width: 100% !important; max-width: 100% !important; }
   </style>
 </head>
 <body>
@@ -140,7 +162,7 @@
 </aside>
 
 <main class="main-content">
-  <div class="topbar">
+  <div class="topbar scroll-anim scroll-anim-fade-up">
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
     <h1>🗺️ Карта прогресса</h1>
     <div class="topbar-right">
@@ -150,7 +172,7 @@
     </div>
   </div>
 
-  <div class="content-card">
+  <div class="content-card scroll-anim scroll-anim-fade-up">
     <div class="progress-map" id="progressMap">
       <!-- Фоновые звёздочки -->
       <div id="mapBgStars"></div>
@@ -170,7 +192,7 @@
     </div>
 
     <!-- Легенда -->
-    <div class="map-legend">
+    <div class="map-legend scroll-anim scroll-anim-fade-up">
       <div class="legend-item"><div class="legend-dot" style="background:var(--accent);"></div> Пройдено</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--pink);"></div> Текущий</div>
       <div class="legend-item"><div class="legend-dot" style="background:rgba(0,0,0,0.1);border:2px solid #ccc;"></div> Заблокировано</div>
@@ -178,18 +200,18 @@
   </div>
 
   <!-- Статистика прогресса -->
-  <div class="stats-grid" style="margin-top:20px;">
-    <div class="stat-card">
-      <div class="stat-icon">✅</div>
-      <div class="stat-info"><h3 id="doneCount">0</h3><p>Пройдено уроков</p></div>
+  <div class="stats-grid scroll-anim scroll-anim-fade-up" style="margin-top:20px; text-align: center;">
+    <div class="stat-card scroll-anim scroll-anim-fade-up">
+      <div class="stat-icon" >✅</div>
+      <div class="stat-info"><h3 id="doneCount">0</h2><p>Пройдено уроков</p></div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card scroll-anim scroll-anim-fade-up">
       <div class="stat-icon">📚</div>
-      <div class="stat-info"><h3 id="totalCount">0</h3><p>Всего уроков</p></div>
+      <div class="stat-info"><h3 id="totalCount">0</h2><p>Всего уроков</p></div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card scroll-anim scroll-anim-fade-up">
       <div class="stat-icon">📊</div>
-      <div class="stat-info"><h3 id="pctCount">0%</h3><p>Прогресс курса</p></div>
+      <div class="stat-info"><h3 id="pctCount">0%</h2><p>Прогресс курса</p></div>
     </div>
   </div>
 </main>

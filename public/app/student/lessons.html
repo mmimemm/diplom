@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Мои уроки — IT-MANIA</title>
   <link rel="icon" href="../../images/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="../../css/app.css">
@@ -11,6 +11,7 @@
   <!-- Monaco Editor -->
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
   <style>
+    .content-card { overflow-x: hidden; }
     .module-card {
       background: white;
       border-radius: var(--radius-card);
@@ -25,7 +26,7 @@
     }
     .module-card:hover { transform: translateX(6px); box-shadow: var(--shadow); }
     .module-icon { font-size: 2rem; width: 52px; text-align: center; }
-    .module-info h3 { font-weight: 700; font-size: 1rem; }
+    .module-info h3 { font-weight: 700; font-size: 1rem; word-break: break-word; }
     .module-info p { color: #888; font-size: 0.85rem; margin-top: 2px; }
 
     .lesson-item {
@@ -40,11 +41,10 @@
     }
     .lesson-item:hover { background: var(--bg); }
     .lesson-status { font-size: 1.2rem; width: 28px; text-align: center; }
-    .lesson-title { flex: 1; font-weight: 600; font-size: 0.95rem; }
+    .lesson-title { flex: 1; font-weight: 600; font-size: 0.95rem; word-break: break-word; }
     .lesson-xp { color: var(--accent); font-size: 0.85rem; font-weight: 700; }
 
-    /* Вкладки теория/практика */
-    .tab-btns { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tab-btns { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
     .tab-btn {
       padding: 10px 24px;
       border-radius: 30px;
@@ -65,15 +65,21 @@
       padding: 12px 16px;
       margin: 12px 0;
       font-size: 0.9rem;
+      word-break: break-word;
     }
 
-    /* Интерактивный блок кода */
-    .interactive-block {
-      background: #1e1e1e;
-      border-radius: 16px;
-      overflow: hidden;
-      margin: 16px 0;
-    }
+        #monaco-editor { min-height: 300px; height: 360px; }
+        @media (max-height: 700px) { #monaco-editor { height: 220px; min-height: 200px; } }
+        @media (max-height: 600px) { #monaco-editor { height: 170px; min-height: 160px; } }
+        @media (max-width: 768px) { #monaco-editor { height: 280px; min-height: 280px; } }
+        @media (max-width: 480px) { #monaco-editor { height: 260px; min-height: 260px; } }
+        @media (max-width: 360px) { #monaco-editor { height: 200px; min-height: 200px; } }
+        .interactive-block {
+          background: #1e1e1e;
+          border-radius: 16px;
+          overflow: hidden;
+          margin: 16px 0;
+        }
     .interactive-block .ib-header {
       background: #2d2d2d;
       padding: 8px 16px;
@@ -96,6 +102,22 @@
     .ib-run-btn:hover { background: var(--accent-dark); }
     .ib-code { padding: 16px; color: #d4d4d4; font-family: monospace; font-size: 0.9rem; white-space: pre; overflow-x: auto; }
     .ib-output { background: #0d0d0d; padding: 12px 16px; color: #4ec9b0; font-family: monospace; font-size: 0.85rem; display: none; }
+
+    @media (max-width: 480px) {
+      .tab-btns { gap: 4px; }
+      .tab-btn { padding: 8px 16px; font-size: 0.85rem; min-height: 44px; }
+      .module-card { padding: 12px 14px; gap: 8px; }
+      .lesson-item { padding: 8px 10px; }
+      .module-icon { font-size: 1.3rem; width: 32px; }
+      .hint-box { font-size: 0.85rem; padding: 10px 12px; }
+      #commentLine { width: 60px; }
+    }
+    @media (max-width: 360px) {
+      .tab-btn { padding: 6px 12px; font-size: 0.78rem; min-height: 44px; }
+      .module-info h3 { font-size: 0.85rem; }
+      .editor-toolbar { flex-direction: column; align-items: stretch; }
+    }
+    .module-card, .lesson-item, .content-card, .main-content, .tab-btns, .editor-wrap { width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
   </style>
 </head>
 <body>
@@ -121,7 +143,7 @@
 </aside>
 
 <main class="main-content">
-  <div class="topbar">
+  <div class="topbar scroll-anim scroll-anim-fade-up">
     <button id="sidebarToggle" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">☰</button>
     <h1>📚 Мои уроки</h1>
     <div class="topbar-right">
@@ -131,43 +153,38 @@
     </div>
   </div>
 
-  <!-- Список модулей / уроков / редактор — переключаются -->
   <div id="viewModules">
-    <div class="content-card">
-      <h2>Мои модули</h2>
-      <div id="modulesList"><p style="color:#888;text-align:center;padding:30px;">Загрузка...</p></div>
+    <div class="content-card scroll-anim scroll-anim-fade-up">
+      <h2 class="scroll-anim scroll-anim-fade-up">Мои модули</h2>
+      <div id="modulesList" class="stagger-container"></div>
     </div>
   </div>
 
   <div id="viewLessons" style="display:none;">
-    <div class="content-card">
+    <div class="content-card scroll-anim scroll-anim-fade-up">
       <button onclick="showModules()" style="background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer;margin-bottom:16px;">← Назад к модулям</button>
-      <h2 id="moduleName">Уроки</h2>
-      <div id="lessonsList"></div>
+      <h2 id="moduleName" class="scroll-anim scroll-anim-fade-up">Уроки</h2>
+      <div id="lessonsList" class="scroll-anim scroll-anim-fade-up"></div>
     </div>
   </div>
 
   <div id="viewLesson" style="display:none;">
-    <div class="content-card">
+    <div class="content-card scroll-anim scroll-anim-fade-up">
       <button onclick="showLessons()" style="background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer;margin-bottom:16px;">← Назад к урокам</button>
-      <h2 id="lessonTitle">Урок</h2>
+      <h2 id="lessonTitle" class="scroll-anim scroll-anim-fade-up">Урок</h2>
 
-      <!-- Вкладки -->
-      <div class="tab-btns">
+      <div class="tab-btns scroll-anim scroll-anim-fade-up">
         <button class="tab-btn active" onclick="switchTab('theory')">📖 Теория</button>
         <button class="tab-btn" onclick="switchTab('practice')">💻 Практика</button>
       </div>
 
-      <!-- Теория -->
-      <div id="tabTheory">
+      <div id="tabTheory" class="scroll-anim scroll-anim-fade-up">
         <div id="theoryContent"></div>
       </div>
 
-      <!-- Практика -->
-      <div id="tabPractice" style="display:none;">
+      <div id="tabPractice" style="display:none;" class="scroll-anim scroll-anim-fade-up">
         <div id="practiceDesc" style="margin-bottom:16px;"></div>
 
-        <!-- Подсказки -->
         <div id="hintsSection" style="display:none;">
           <div class="hint-box" id="currentHint"></div>
         </div>
@@ -175,7 +192,6 @@
           💡 Дайте идею!
         </button>
 
-        <!-- Редактор кода -->
         <div class="editor-wrap">
           <div class="editor-toolbar">
             <span id="editorLang">JavaScript</span>
@@ -187,11 +203,9 @@
           <div id="monaco-editor"></div>
         </div>
 
-        <!-- Вывод -->
         <div id="codeOutput" style="background:#1e1e1e;border-radius:0 0 16px 16px;padding:12px 16px;color:#4ec9b0;font-family:monospace;font-size:0.85rem;display:none;"></div>
 
-        <!-- Чат по коду -->
-        <div class="content-card" style="margin-top:16px;">
+        <div class="content-card scroll-anim scroll-anim-fade-up" style="margin-top:16px;">
           <h2>💬 Вопрос преподавателю</h2>
           <div id="codeComments" style="max-height:200px;overflow-y:auto;margin-bottom:12px;"></div>
           <div style="display:flex;gap:8px;">
@@ -207,10 +221,13 @@
 
 <div id="cat-assistant">
   <div class="cat-bubble" id="catBubble"></div>
-  <img src="../../images/mini.png" alt="Кот" onerror="this.onerror=null; this.src='../../images/cat.png'">
+  <img src="../../images/mini.png" alt="Кот" loading="lazy" onerror="this.onerror=null; this.src='../../images/cat.png'">
 </div>
 
 <script src="../../js/app.js"></script>
+<script src="../../js/app-enhancements.js"></script>
+<script src="../../js/shop-effects.js"></script>
+<script src="../../js/theme-manager.js"></script>
 <script>
   requireAuth(['student']);
 
@@ -220,7 +237,6 @@
   let hintIndex = 0;
   let currentModuleId = null;
 
-  // Инициализируем Monaco
   require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' } });
   require(['vs/editor/editor.main'], () => {
     monacoEditor = monaco.editor.create(document.getElementById('monaco-editor'), {
@@ -247,7 +263,6 @@
       return;
     }
 
-    // Проверка оплаты курса
     const subStatus = await api('/api/subscription-status');
     if (subStatus && !subStatus.isPaid) {
       document.getElementById('modulesList').innerHTML = `
@@ -261,7 +276,6 @@
       return;
     }
 
-    // Загружаем все курсы без админ-прав — доступно всем
     loadModules();
   }
 
@@ -272,7 +286,6 @@
       return;
     }
 
-    // Показываем модули первого курса
     const course = courses[0];
     const modules = await api(`/api/courses/${course._id}/modules`);
 
@@ -304,8 +317,8 @@
     const doneIds = new Set(progress?.map(p => p.lessonId?._id || p.lessonId) || []);
 
     document.getElementById('lessonsList').innerHTML = lessons?.length
-      ? lessons.map(l => `
-        <div class="lesson-item" onclick="openLesson('${l._id}')">
+      ? lessons.map((l, i) => `
+        <div class="lesson-item scroll-anim scroll-anim-fade-up" style="animation-delay:${i * 0.06}s" onclick="openLesson('${l._id}')">
           <div class="lesson-status">${doneIds.has(l._id) ? '✅' : '🔓'}</div>
           <div class="lesson-title">${l.title}</div>
           <div class="lesson-xp">+${l.xpReward} XP</div>
@@ -315,7 +328,6 @@
   }
 
   async function openLesson(lessonId) {
-    // Показываем мини-игру перед уроком
     showMiniGame(async (correct) => {
       if (correct) showToast('Правильно! +10 XP бонус 🎉');
       await loadLesson(lessonId);
@@ -330,10 +342,8 @@
     document.getElementById('viewLesson').style.display = 'block';
     document.getElementById('lessonTitle').textContent = currentLesson.title;
 
-    // Теория
     document.getElementById('theoryContent').innerHTML = currentLesson.theory?.content || '<p>Теоретическая часть в разработке</p>';
 
-    // Интерактивные блоки
     if (currentLesson.theory?.interactiveBlocks?.length) {
       const blocksHtml = currentLesson.theory.interactiveBlocks.map((b, i) => `
         <div class="interactive-block">
@@ -348,7 +358,6 @@
       document.getElementById('theoryContent').innerHTML += blocksHtml;
     }
 
-    // Практика
     document.getElementById('practiceDesc').innerHTML = currentLesson.practice?.description || '';
     hintIndex = 0;
 
@@ -359,7 +368,6 @@
       document.getElementById('editorLang').textContent = lang.charAt(0).toUpperCase() + lang.slice(1);
     }
 
-    // Загружаем комментарии
     loadComments();
   }
 
@@ -367,6 +375,7 @@
     document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i === 0) === (tab === 'theory')));
     document.getElementById('tabTheory').style.display = tab === 'theory' ? 'block' : 'none';
     document.getElementById('tabPractice').style.display = tab === 'practice' ? 'block' : 'none';
+    if (typeof playSound === 'function') playSound('swipe');
   }
 
   function showModules() {
@@ -431,7 +440,6 @@
 
   async function loadComments() {
     if (!currentSubmissionId) return;
-    // Комментарии загружаются после первой отправки
   }
 
   async function sendComment() {
@@ -463,7 +471,5 @@
 
   init();
 </script>
-  <script src="../../js/shop-effects.js"></script>
-  <script src="../../js/theme-manager.js"></script>
 </body>
 </html>

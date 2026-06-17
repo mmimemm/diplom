@@ -70,7 +70,7 @@
 <script>
   requireAuth(['admin']);
 
-  async async function init() {
+  async function init() {
     const me = await api("/api/auth/me");
     if (me && typeof updateTopbarAvatar === "function") {
       await updateTopbarAvatar(me);
