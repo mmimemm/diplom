@@ -405,7 +405,7 @@ body {
   transition: transform 0.3s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  touch-action: pan-y pinch-zoom;
+  touch-action: none;
 }
 #cat-assistant.dragging {
   cursor: grabbing;
@@ -713,12 +713,11 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
   .content-card { padding: 16px; }
   .content-card h2 { font-size: 1rem; margin-bottom: 12px; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  #cat-assistant { display: none !important; }
   .app-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .app-table-wrapper { overflow-x: auto; width: 100%; }
   .app-table-wrapper table { min-width: 400px; }
   canvas { max-width: 100%; height: auto !important; }
-  #cat-assistant img { width: 70px; }
-  #cat-assistant { bottom: calc(16px + var(--safe-area-bottom)); right: 16px; }
   .cat-bubble { max-width: 160px; font-size: 0.8rem; }
   .notif-panel, #notifPanel { width: calc(100vw - 24px); top: calc(70px + var(--safe-area-top)); }
   .progress-map { min-height: 350px; padding: 20px; }
@@ -783,8 +782,6 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
   .content-card h2 { font-size: 0.95rem; }
   .hide-mobile { display: none; }
   .show-mobile { display: initial; }
-  #cat-assistant { bottom: calc(12px + var(--safe-area-bottom)); right: 12px; }
-  #cat-assistant img { width: 60px; }
   .quick-actions { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .quick-btn { padding: 12px 8px; font-size: 0.75rem; }
   .quick-btn .q-icon { font-size: 1.4rem; }

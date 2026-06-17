@@ -503,10 +503,10 @@ function initCatAssistant() {
   document.addEventListener('mouseup', _boundMouseUp);
 
   // Touch — с порогом: не начинаем drag сразу, ждём пока палец сдвинется
-  // Используем { passive: false } чтобы иметь возможность вызвать preventDefault и заблокировать скролл при перетаскивании
+  // touchstart НЕ вызывает preventDefault — страница скроллится при обычном касании
+  // preventDefault вызывается только в touchmove, когда началось реальное перетаскивание
   cat.addEventListener('touchstart', function(e) {
     const t = e.touches[0];
-    // Запоминаем начальную позицию, но drag активируем только после движения
     const rect = cat.getBoundingClientRect();
     dragStartX = t.clientX;
     dragStartY = t.clientY;
@@ -515,14 +515,13 @@ function initCatAssistant() {
     isDragging = true;
     wasDragged = false;
     dragArmed = false;
-    cat.style.touchAction = 'none';  // Блокируем скролл на время перетаскивания
     cat.classList.add('dragging');
     cat.style.left = rect.left + 'px';
     cat.style.top = rect.top + 'px';
     cat.style.bottom = 'auto';
     cat.style.right = 'auto';
-    e.preventDefault();  // Предотвращаем скролл при перетаскивании
-  }, { passive: false });
+    // НЕ вызываем preventDefault — скролл должен работать
+  }, { passive: true });
 
   _boundTouchMove = function(e) {
     if (!isDragging) return;
@@ -532,6 +531,9 @@ function initCatAssistant() {
     if (!dragArmed && !wasDragged && (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold)) {
       dragArmed = true;
       wasDragged = true;
+      // Началось перетаскивание — блокируем скролл
+      cat.style.touchAction = 'none';
+      e.preventDefault();
     }
     if (!dragArmed && !wasDragged) return;
     let newLeft = dragOrigLeft + dx;
@@ -542,7 +544,7 @@ function initCatAssistant() {
     newTop = Math.max(0, Math.min(newTop, maxTop));
     cat.style.left = newLeft + 'px';
     cat.style.top = newTop + 'px';
-    e.preventDefault();  // Блокируем скролл во время перетаскивания
+    if (dragArmed) e.preventDefault();
   };
   _boundTouchEnd = function() {
     // Восстанавливаем touch-action для скролла
